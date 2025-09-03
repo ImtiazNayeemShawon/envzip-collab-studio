@@ -1,73 +1,45 @@
-# Welcome to your Lovable project
+# Envzip - Complete Project Plan
 
-## Project info
+## 📋 Project Overview
+**Envzip** is a secure, real-time environment variable synchronization system that allows developers to manage `.env` files across multiple projects and environments with team collaboration features.
 
-**URL**: https://lovable.dev/projects/7533ba78-c40e-4c72-8a60-6fb2d15614fe
+### Key Features
+- Real-time `.env` file synchronization
+- Multi-project and multi-environment support
+- Team collaboration with role-based access
+- Version control and rollback capabilities
+- CLI tool for local development
+- Web dashboard for management
+- End-to-end encryption for sensitive data
 
-## How can I edit this code?
+### Tech Stack
+- **Backend:** Appwrite (Auth, Database, Functions, Realtime, Storage)  
+- **CLI:** Node.js with file system watchers  
+- **Frontend:** React with real-time subscriptions  
+- **Security:** AES-256 encryption, JWT authentication
 
-There are several ways of editing your application.
 
-**Use Lovable**
+### 🔧 Repository Guidelines
+- **Branching Strategy:** Use `main` for production-ready code, `dev` for active development, and feature branches for new features.
+- **Commits:** Follow conventional commits (`feat`, `fix`, `chore`, `docs`, etc.).
+- **Issue Tracking:** Use GitHub Issues or similar for bugs, features, and enhancements.
+- **Code Formatting:** Use Prettier/ESLint for consistent code style across CLI and frontend.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7533ba78-c40e-4c72-8a60-6fb2d15614fe) and start prompting.
+### 📦 Versioning
+- Semantic versioning (`MAJOR.MINOR.PATCH`)  
+- Automatic changelog generation from commit messages  
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🔐 Security
+- Sensitive data must be encrypted with AES-256 before storage  
+- Use JWT for authentication in CLI and frontend  
+- Secrets should never be committed to the repository  
 
-**Use your preferred IDE**
+## 🚀 How to Clone and Start
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Follow these steps to get Envzip running locally:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 1. Clone the Repository
+```bash
+git clone https://github.com/your-username/envzip.git
+cd envzip
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/7533ba78-c40e-4c72-8a60-6fb2d15614fe) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
