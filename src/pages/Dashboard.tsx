@@ -1,0 +1,234 @@
+import { useState } from "react";
+import { Plus, Search, Filter, MoreVertical, Clock, Users, AlertCircle, CheckCircle2, Edit3 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  environments: Array<{
+    name: "development" | "staging" | "production";
+    status: "synced" | "editing" | "conflict";
+    lastUpdated: string;
+    updatedBy: string;
+  }>;
+  collaborators: number;
+  totalVariables: number;
+}
+
+const mockProjects: Project[] = [
+  {
+    id: "1",
+    name: "E-commerce API",
+    description: "Main backend API for the e-commerce platform",
+    environments: [
+      { name: "development", status: "editing", lastUpdated: "2 minutes ago", updatedBy: "Alice Johnson" },
+      { name: "staging", status: "synced", lastUpdated: "1 hour ago", updatedBy: "Bob Chen" },
+      { name: "production", status: "synced", lastUpdated: "1 day ago", updatedBy: "Carol Davis" }
+    ],
+    collaborators: 4,
+    totalVariables: 23
+  },
+  {
+    id: "2",
+    name: "Frontend App",
+    description: "React application for customer-facing website",
+    environments: [
+      { name: "development", status: "conflict", lastUpdated: "5 minutes ago", updatedBy: "David Wilson" },
+      { name: "staging", status: "editing", lastUpdated: "30 minutes ago", updatedBy: "Alice Johnson" },
+      { name: "production", status: "synced", lastUpdated: "2 days ago", updatedBy: "Bob Chen" }
+    ],
+    collaborators: 3,
+    totalVariables: 15
+  },
+  {
+    id: "3",
+    name: "Analytics Service",
+    description: "Microservice for tracking and analytics",
+    environments: [
+      { name: "development", status: "synced", lastUpdated: "1 hour ago", updatedBy: "Carol Davis" },
+      { name: "staging", status: "synced", lastUpdated: "3 hours ago", updatedBy: "David Wilson" },
+      { name: "production", status: "synced", lastUpdated: "1 week ago", updatedBy: "Alice Johnson" }
+    ],
+    collaborators: 2,
+    totalVariables: 8
+  },
+  {
+    id: "4",
+    name: "Payment Gateway",
+    description: "Secure payment processing service",
+    environments: [
+      { name: "development", status: "editing", lastUpdated: "10 minutes ago", updatedBy: "Bob Chen" },
+      { name: "staging", status: "synced", lastUpdated: "2 hours ago", updatedBy: "Carol Davis" },
+      { name: "production", status: "synced", lastUpdated: "3 days ago", updatedBy: "David Wilson" }
+    ],
+    collaborators: 4,
+    totalVariables: 31
+  }
+];
+
+const StatusIcon = ({ status }: { status: string }) => {
+  switch (status) {
+    case "synced":
+      return <CheckCircle2 className="w-4 h-4 text-success" />;
+    case "editing":
+      return <Edit3 className="w-4 h-4 text-warning" />;
+    case "conflict":
+      return <AlertCircle className="w-4 h-4 text-destructive" />;
+    default:
+      return <Clock className="w-4 h-4 text-muted-foreground" />;
+  }
+};
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const variants = {
+    synced: "status-synced",
+    editing: "status-editing",
+    conflict: "status-conflict"
+  } as const;
+
+  return (
+    <Badge variant="secondary" className={`${variants[status as keyof typeof variants]} capitalize`}>
+      {status}
+    </Badge>
+  );
+};
+
+const Dashboard = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("recent");
+
+  const filteredProjects = mockProjects.filter(project =>
+    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    project.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="container mx-auto px-6 py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Projects</h1>
+          <p className="text-muted-foreground">
+            Manage environment variables across all your projects
+          </p>
+        </div>
+        <Button className="bg-primary hover:bg-primary-hover text-primary-foreground">
+          <Plus className="w-4 h-4 mr-2" />
+          New Project
+        </Button>
+      </div>
+
+      {/* Filters and Search */}
+      <div className="flex items-center space-x-4 mb-6">
+        <div className="flex-1 max-w-md relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            placeholder="Search projects..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-card border-border"
+          />
+        </div>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="border-border">
+              <Filter className="w-4 h-4 mr-2" />
+              Filter
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-popover border-border">
+            <DropdownMenuItem>All Projects</DropdownMenuItem>
+            <DropdownMenuItem>Active</DropdownMenuItem>
+            <DropdownMenuItem>With Conflicts</DropdownMenuItem>
+            <DropdownMenuItem>Recently Updated</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Projects Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredProjects.map((project) => (
+          <Card key={project.id} className="group hover:bg-card-hover transition-smooth cursor-pointer border-border">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <Link to={`/project/${project.id}`}>
+                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-smooth mb-1">
+                      {project.name}
+                    </h3>
+                  </Link>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {project.description}
+                  </p>
+                </div>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-smooth">
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-popover border-border">
+                    <DropdownMenuItem>Edit Project</DropdownMenuItem>
+                    <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                    <DropdownMenuItem>Export</DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              {/* Environment Status */}
+              <div className="space-y-2 mb-4">
+                {project.environments.map((env) => (
+                  <div key={env.name} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                    <div className="flex items-center space-x-2">
+                      <StatusIcon status={env.status} />
+                      <span className="text-sm font-medium capitalize text-foreground">{env.name}</span>
+                      <StatusBadge status={env.status} />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {env.lastUpdated}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Project Stats */}
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div className="flex items-center space-x-1">
+                  <Users className="w-4 h-4" />
+                  <span>{project.collaborators} collaborators</span>
+                </div>
+                <div className="text-xs">
+                  {project.totalVariables} variables
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {filteredProjects.length === 0 && (
+        <div className="text-center py-12">
+          <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No projects found</h3>
+          <p className="text-muted-foreground">
+            Try adjusting your search criteria or create a new project.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Dashboard;
