@@ -24,7 +24,7 @@ const Layout = ({ children }: LayoutProps) => {
               <GitBranch className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">EnvSync</h1>
+              <h1 className="text-xl font-bold text-foreground">envzip</h1>
               <p className="text-xs text-muted-foreground">Environment Manager</p>
             </div>
           </Link>

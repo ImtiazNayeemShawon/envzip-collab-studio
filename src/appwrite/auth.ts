@@ -1,19 +1,24 @@
 import { Client, Account, ID } from "appwrite";
 
+const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT;
+const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID;
+
 export class AuthService {
     client: Client; // Fixed: Added proper type annotation
     account: Account; // Fixed: Added proper type annotation
 
     constructor() {
-        this.client = new Client() // Fixed: Added 'new' keyword
-            .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT) // Your API Endpoint
-            .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID); // Your project ID
-        
+        if (!endpoint || !projectId) {
+            throw new Error('VITE_APPWRITE_ENDPOINT or VITE_APPWRITE_PROJECT_ID is missing');
+        }
+        this.client = new Client().setEndpoint(endpoint).setProject(projectId);
+
         this.account = new Account(this.client);
     }
 
     // Create a new user account
     async createAccount(email: string, password: string, name: string) {
+        console.log("Creating account for:", email);
         try {
             return await this.account.create(ID.unique(), email, password, name);
         } catch (error) {

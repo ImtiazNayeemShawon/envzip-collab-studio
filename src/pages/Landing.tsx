@@ -26,7 +26,7 @@ const Landing = () => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
               <Terminal className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold font-mono text-primary">EnvSync</span>
+              <span className="text-2xl font-bold font-mono text-primary">envzip</span>
             </div>
             <div className="flex items-center gap-4">
               <Link to="/login">
@@ -315,7 +315,7 @@ const Landing = () => {
             Ready to Sync Your Environment?
           </h2>
           <p className="text-xl text-muted-foreground mb-8">
-            Join thousands of developers who trust EnvSync for their environment management
+            Join thousands of developers who trust envzip for their environment management
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup">
@@ -337,7 +337,7 @@ const Landing = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
               <Terminal className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold font-mono text-primary">EnvSync</span>
+              <span className="text-2xl font-bold font-mono text-primary">envzip</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <a href="#" className="hover:text-primary transition-colors">Privacy</a>
