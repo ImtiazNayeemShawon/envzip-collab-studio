@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Bell, Shield, Key, Palette, Globe, Save, Eye, EyeOff, Plus } from "lucide-react";
+import { User, Bell, Shield, Key, Palette, Globe, Save, Eye, EyeOff, Plus, LogOutIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth"; // import the useAuth hook
 
 const Settings = () => {
   const { toast } = useToast();
@@ -54,6 +55,16 @@ const Settings = () => {
       description: "A new API key has been generated. Please save it securely.",
     });
   };
+
+  //  logout function
+  const { logout } = useAuth(); // assuming useAuth is a custom hook for authentication
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Signed Out",
+      description: "You have been signed out successfully.",
+    });
+  }
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -174,10 +185,16 @@ const Settings = () => {
                   </Select>
                 </div>
 
-                <Button onClick={() => handleSave("Profile")} className="bg-primary hover:bg-primary-hover">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </Button>
+                <div className="flex items-center space-x-4">
+                  <Button onClick={() => handleSave("Profile")} className="bg-primary hover:bg-primary-hover">
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </Button>
+                  <Button onClick={() => handleLogout()} className="bg-red-500 text-white">
+                    <LogOutIcon />
+                    Sign Out
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -343,12 +360,12 @@ const Settings = () => {
                       <div>
                         <h4 className="font-medium">Primary API Key</h4>
                         <p className="text-sm text-muted-foreground">
-                          Used for programmatic access to EnvSync
+                          Used for programmatic access to envzip
                         </p>
                       </div>
                       <Badge variant="secondary" className="status-synced">Active</Badge>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <Input
                         type={showApiKey ? "text" : "password"}
@@ -368,7 +385,7 @@ const Settings = () => {
                         Regenerate
                       </Button>
                     </div>
-                    
+
                     <p className="text-xs text-muted-foreground mt-2">
                       Created on Jan 15, 2024 • Last used 2 hours ago
                     </p>

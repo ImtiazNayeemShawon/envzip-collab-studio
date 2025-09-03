@@ -5,15 +5,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, Github, Mail } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner"
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  //login
+  const { login } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement login logic
+    try {
+      const response = await login(email, password);
+      console.log("Login response:", response);
+      // Optionally show success popup
+      toast.success("Logged in successfully!");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error(error?.message || "Login failed. Please try again.");
+    }
     console.log("Login:", { email, password });
   };
 
@@ -22,7 +35,7 @@ const Login = () => {
       <div className="w-full max-w-md space-y-6">
         {/* Logo/Brand */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-primary">EnvSync</h1>
+          <h1 className="text-3xl font-bold text-primary">envzip</h1>
           <p className="text-muted-foreground">Environment variable management</p>
         </div>
 
@@ -46,7 +59,7 @@ const Login = () => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -75,8 +88,8 @@ const Login = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Link 
-                  to="/forgot-password" 
+                <Link
+                  to="/forgot-password"
                   className="text-sm text-primary hover:text-primary-hover transition-colors"
                 >
                   Forgot password?
@@ -88,7 +101,7 @@ const Login = () => {
               </Button>
             </form>
 
-            <div className="relative">
+            {/* <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
               </div>
@@ -106,12 +119,12 @@ const Login = () => {
                 <Mail className="h-4 w-4 mr-2" />
                 Google
               </Button>
-            </div>
+            </div> */}
 
             <div className="text-center text-sm">
               <span className="text-muted-foreground">Don't have an account? </span>
-              <Link 
-                to="/signup" 
+              <Link
+                to="/signup"
                 className="text-primary hover:text-primary-hover font-medium transition-colors"
               >
                 Sign up

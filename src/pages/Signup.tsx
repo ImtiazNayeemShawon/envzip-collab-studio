@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Github, Mail, Check, X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -28,10 +30,23 @@ const Signup = () => {
 
   const passwordsMatch = formData.password === formData.confirmPassword && formData.confirmPassword.length > 0;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Auth hook
+  const { register } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement signup logic
-    console.log("Signup:", formData);
+    try {
+      const response = await register(formData.email, formData.password, formData.name);
+      console.log("Login response:", response);
+      // Optionally show success popup
+      toast.success("Logged in successfully!");
+      // Redirect or perform other actions after successful login
+      
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error(error?.message || "Login failed. Please try again.");
+    }
+    console.log("Login:", formData.email);
   };
 
   const updateFormData = (field: string, value: string | boolean) => {
@@ -43,7 +58,7 @@ const Signup = () => {
       <div className="w-full max-w-md space-y-6">
         {/* Logo/Brand */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-primary">EnvSync</h1>
+          <h1 className="text-3xl font-bold text-primary">envzip</h1>
           <p className="text-muted-foreground">Environment variable management</p>
         </div>
 
@@ -79,7 +94,7 @@ const Signup = () => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -105,7 +120,7 @@ const Signup = () => {
                     )}
                   </Button>
                 </div>
-                
+
                 {/* Password Requirements */}
                 {formData.password && (
                   <div className="space-y-1 mt-2">
@@ -150,7 +165,7 @@ const Signup = () => {
                     )}
                   </Button>
                 </div>
-                
+
                 {formData.confirmPassword && (
                   <div className="flex items-center space-x-2 text-xs mt-2">
                     {passwordsMatch ? (
@@ -186,8 +201,8 @@ const Signup = () => {
                 </label>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full transition-smooth"
                 disabled={!formData.agreeToTerms || !passwordsMatch || passwordRequirements.some(req => !req.met)}
               >
@@ -195,7 +210,7 @@ const Signup = () => {
               </Button>
             </form>
 
-            <div className="relative">
+            {/* <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
               </div>
@@ -213,12 +228,12 @@ const Signup = () => {
                 <Mail className="h-4 w-4 mr-2" />
                 Google
               </Button>
-            </div>
+            </div> */}
 
             <div className="text-center text-sm">
               <span className="text-muted-foreground">Already have an account? </span>
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="text-primary hover:text-primary-hover font-medium transition-colors"
               >
                 Sign in
