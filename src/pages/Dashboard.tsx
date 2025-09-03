@@ -6,71 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Project } from "@/zustand/projectStore";
+import { useProjectStore } from "@/zustand/projectStore";
 
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  environments: Array<{
-    name: "development" | "staging" | "production";
-    status: "synced" | "editing" | "conflict";
-    lastUpdated: string;
-    updatedBy: string;
-  }>;
-  collaborators: number;
-  totalVariables: number;
-}
 
-const mockProjects: Project[] = [
-  {
-    id: "1",
-    name: "E-commerce API",
-    description: "Main backend API for the e-commerce platform",
-    environments: [
-      { name: "development", status: "editing", lastUpdated: "2 minutes ago", updatedBy: "Alice Johnson" },
-      { name: "staging", status: "synced", lastUpdated: "1 hour ago", updatedBy: "Bob Chen" },
-      { name: "production", status: "synced", lastUpdated: "1 day ago", updatedBy: "Carol Davis" }
-    ],
-    collaborators: 4,
-    totalVariables: 23
-  },
-  {
-    id: "2",
-    name: "Frontend App",
-    description: "React application for customer-facing website",
-    environments: [
-      { name: "development", status: "conflict", lastUpdated: "5 minutes ago", updatedBy: "David Wilson" },
-      { name: "staging", status: "editing", lastUpdated: "30 minutes ago", updatedBy: "Alice Johnson" },
-      { name: "production", status: "synced", lastUpdated: "2 days ago", updatedBy: "Bob Chen" }
-    ],
-    collaborators: 3,
-    totalVariables: 15
-  },
-  {
-    id: "3",
-    name: "Analytics Service",
-    description: "Microservice for tracking and analytics",
-    environments: [
-      { name: "development", status: "synced", lastUpdated: "1 hour ago", updatedBy: "Carol Davis" },
-      { name: "staging", status: "synced", lastUpdated: "3 hours ago", updatedBy: "David Wilson" },
-      { name: "production", status: "synced", lastUpdated: "1 week ago", updatedBy: "Alice Johnson" }
-    ],
-    collaborators: 2,
-    totalVariables: 8
-  },
-  {
-    id: "4",
-    name: "Payment Gateway",
-    description: "Secure payment processing service",
-    environments: [
-      { name: "development", status: "editing", lastUpdated: "10 minutes ago", updatedBy: "Bob Chen" },
-      { name: "staging", status: "synced", lastUpdated: "2 hours ago", updatedBy: "Carol Davis" },
-      { name: "production", status: "synced", lastUpdated: "3 days ago", updatedBy: "David Wilson" }
-    ],
-    collaborators: 4,
-    totalVariables: 31
-  }
-];
+
 
 const StatusIcon = ({ status }: { status: string }) => {
   switch (status) {
@@ -100,10 +40,11 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const Dashboard = () => {
+  const projects = useProjectStore((state) => state.projects);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("recent");
 
-  const filteredProjects = mockProjects.filter(project =>
+  const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     project.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -135,7 +76,7 @@ const Dashboard = () => {
             className="pl-10 bg-card border-border"
           />
         </div>
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="border-border">
@@ -168,7 +109,7 @@ const Dashboard = () => {
                     {project.description}
                   </p>
                 </div>
-                
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-smooth">

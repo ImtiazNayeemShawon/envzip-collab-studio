@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Plus, Edit3, Copy, Trash2, History, GitBranch, Eye, EyeOff, Search, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ interface EnvVariable {
   editedBy?: string;
 }
 
-const mockVariables: EnvVariable[] = [
+const variables: EnvVariable[] = [
   {
     id: "1",
     key: "API_KEY",
@@ -80,13 +80,15 @@ const mockVariables: EnvVariable[] = [
     type: "string",
     lastModified: "3 days ago",
     modifiedBy: "Alice Johnson",
-    environment: "development"
+    environment: "production"
   }
 ];
 
 const VariableValue = ({ variable }: { variable: EnvVariable }) => {
+
+
   const [isVisible, setIsVisible] = useState(false);
-  
+
   if (variable.type === "secret" && !isVisible) {
     return (
       <div className="flex items-center space-x-2">
@@ -144,9 +146,9 @@ const CollaboratorIndicator = ({ editedBy }: { editedBy: string }) => {
     "Carol Davis": "collaborator-3",
     "David Wilson": "collaborator-4"
   } as const;
-  
+
   const color = collaboratorColors[editedBy as keyof typeof collaboratorColors] || "collaborator-1";
-  
+
   return (
     <div className={`w-3 h-3 rounded-full animate-pulse-subtle ${color}`} />
   );
@@ -161,10 +163,10 @@ const ProjectDetail = () => {
   const [editingVariable, setEditingVariable] = useState<EnvVariable | null>(null);
   const [newVariable, setNewVariable] = useState({ key: "", value: "", description: "", type: "string" });
 
-  const filteredVariables = mockVariables.filter(variable =>
+  const filteredVariables = variables.filter(variable =>
     variable.environment === selectedEnvironment &&
     (variable.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     variable.description?.toLowerCase().includes(searchQuery.toLowerCase()))
+      variable.description?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleCopyVariable = (variable: EnvVariable) => {
@@ -197,7 +199,7 @@ const ProjectDetail = () => {
             Synced
           </Badge>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Button variant="outline" onClick={() => setShowHistory(true)}>
             <History className="w-4 h-4 mr-2" />
