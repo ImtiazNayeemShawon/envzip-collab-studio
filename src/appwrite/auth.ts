@@ -25,7 +25,7 @@ export class AuthService {
     // Login user
     async login(email: string, password: string) {
         try {
-            return await this.account.createEmailSession(email, password);
+            return await this.account.createEmailPasswordSession(email, password);
         } catch (error) {
             console.error('Error logging in:', error);
             throw error;
@@ -108,7 +108,7 @@ export class AuthService {
     // Complete password recovery
     async completePasswordRecovery(userId: string, secret: string, newPassword: string) {
         try {
-            return await this.account.updateRecovery(userId, secret, newPassword, newPassword);
+            return await this.account.updateRecovery(userId, secret, newPassword);
         } catch (error) {
             console.error('Error completing password recovery:', error);
             throw error;
