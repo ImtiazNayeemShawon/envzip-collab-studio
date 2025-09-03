@@ -14,14 +14,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth"; // import the useAuth hook
 
 const Settings = () => {
+  const { logout, user } = useAuth(); //  useAuth is a custom hook for authentication
+
   const { toast } = useToast();
   const [showApiKey, setShowApiKey] = useState(false);
   const [settings, setSettings] = useState({
     profile: {
-      name: "John Doe",
-      email: "john.doe@company.com",
-      bio: "Senior Developer focused on DevOps and automation tools.",
-      timezone: "America/New_York"
+      name: user?.name || "John Doe",
+      email: user?.email || "",
     },
     notifications: {
       emailOnChange: true,
@@ -57,7 +57,6 @@ const Settings = () => {
   };
 
   //  logout function
-  const { logout } = useAuth(); // assuming useAuth is a custom hook for authentication
   const handleLogout = () => {
     logout();
     toast({
@@ -111,7 +110,7 @@ const Settings = () => {
                 <div className="flex items-center space-x-4">
                   <Avatar className="w-20 h-20">
                     <AvatarFallback className="text-xl bg-primary text-primary-foreground">
-                      JD
+                      {user?.name ? user.name.split(" ").map(n => n[0]).join("") : "JD"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
@@ -152,7 +151,7 @@ const Settings = () => {
                   </div>
                 </div>
 
-                <div>
+                {/* <div>
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea
                     id="bio"
@@ -164,9 +163,9 @@ const Settings = () => {
                     rows={3}
                     className="bg-card border-border"
                   />
-                </div>
+                </div> */}
 
-                <div>
+                {/* <div>
                   <Label htmlFor="timezone">Timezone</Label>
                   <Select value={settings.profile.timezone} onValueChange={(value) => setSettings({
                     ...settings,
@@ -183,7 +182,7 @@ const Settings = () => {
                       <SelectItem value="UTC">UTC</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </div> */}
 
                 <div className="flex items-center space-x-4">
                   <Button onClick={() => handleSave("Profile")} className="bg-primary hover:bg-primary-hover">
