@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Project } from "@/zustand/projectStore";
 import { useProjectStore } from "@/zustand/projectStore";
+import { ProjectForm } from "@/components/ProjectForm";
 
 
 
@@ -40,9 +41,11 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const Dashboard = () => {
-  const projects = useProjectStore((state) => state.projects);
+  const { projects, deleteProject } = useProjectStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("recent");
+  const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | undefined>();
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -59,7 +62,10 @@ const Dashboard = () => {
             Manage environment variables across all your projects
           </p>
         </div>
-        <Button className="bg-primary hover:bg-primary-hover text-primary-foreground">
+        <Button 
+          onClick={() => setIsProjectFormOpen(true)}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
           <Plus className="w-4 h-4 mr-2" />
           New Project
         </Button>
@@ -117,10 +123,20 @@ const Dashboard = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-popover border-border">
-                    <DropdownMenuItem>Edit Project</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      setEditingProject(project);
+                      setIsProjectFormOpen(true);
+                    }}>
+                      Edit Project
+                    </DropdownMenuItem>
                     <DropdownMenuItem>Duplicate</DropdownMenuItem>
                     <DropdownMenuItem>Export</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="text-destructive"
+                      onClick={() => deleteProject(project.id)}
+                    >
+                      Delete
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -168,6 +184,15 @@ const Dashboard = () => {
           </p>
         </div>
       )}
+
+      <ProjectForm
+        isOpen={isProjectFormOpen}
+        onClose={() => {
+          setIsProjectFormOpen(false);
+          setEditingProject(undefined);
+        }}
+        project={editingProject}
+      />
     </div>
   );
 };
