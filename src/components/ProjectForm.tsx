@@ -53,9 +53,9 @@ export const ProjectForm = ({ isOpen, onClose, project }: ProjectFormProps) => {
           { name: "staging", status: "synced", lastUpdated: "Never", updatedBy: "-" },
           { name: "production", status: "synced", lastUpdated: "Never", updatedBy: "-" }
         ],
-        collaborators: 1,
+        collaborators: 0,
         totalVariables: 0,
-        teamMembers: []
+        assignedMembers: []
       });
       toast({
         title: "Project created",

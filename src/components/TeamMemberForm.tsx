@@ -25,11 +25,13 @@ interface TeamMemberFormProps {
   onClose: () => void;
   projectId: string;
   member?: TeamMember;
+  isGlobalTeam?: boolean;
 }
 
-export const TeamMemberForm = ({ isOpen, onClose, projectId, member }: TeamMemberFormProps) => {
-  const addTeamMember = useProjectStore((state) => state.addTeamMember);
-  const updateTeamMember = useProjectStore((state) => state.updateTeamMember);
+export const TeamMemberForm = ({ isOpen, onClose, projectId, member, isGlobalTeam = false }: TeamMemberFormProps) => {
+  const addGlobalTeamMember = useProjectStore((state) => state.addGlobalTeamMember);
+  const updateGlobalTeamMember = useProjectStore((state) => state.updateGlobalTeamMember);
+  const assignMemberToProject = useProjectStore((state) => state.assignMemberToProject);
   const { toast } = useToast();
 
   const form = useForm<TeamMemberFormData>({
@@ -42,22 +44,31 @@ export const TeamMemberForm = ({ isOpen, onClose, projectId, member }: TeamMembe
   });
 
   const onSubmit = (data: TeamMemberFormData) => {
-    if (member) {
-      updateTeamMember(projectId, member.id, data);
-      toast({
-        title: "Team member updated",
-        description: "Team member has been updated successfully.",
-      });
+    if (isGlobalTeam) {
+      if (member) {
+        updateGlobalTeamMember(member.id, data);
+        toast({
+          title: "Team member updated",
+          description: "Team member has been updated successfully.",
+        });
+      } else {
+        addGlobalTeamMember({
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          joinedAt: new Date().toLocaleDateString(),
+          status: "offline"
+        });
+        toast({
+          title: "Team member added",
+          description: "New team member has been added to the global team.",
+        });
+      }
     } else {
-      addTeamMember(projectId, {
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        joinedAt: new Date().toLocaleDateString(),
-      });
+      // This is for project-specific assignment (handled in ProjectTeamSelector)
       toast({
-        title: "Team member added",
-        description: "New team member has been added successfully.",
+        title: "Feature not implemented",
+        description: "Use the project team selector for assignments.",
       });
     }
     form.reset();

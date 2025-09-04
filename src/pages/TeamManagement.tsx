@@ -34,11 +34,12 @@ const getRoleBadgeVariant = (role: string) => {
 
 const TeamManagement = () => {
   const { id } = useParams<{ id: string }>();
-  const { getProjectById, removeTeamMember } = useProjectStore();
+  const { getProjectById, getProjectMembers, removeMemberFromProject } = useProjectStore();
   const [isTeamFormOpen, setIsTeamFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | undefined>();
 
   const project = id ? getProjectById(id) : undefined;
+  const projectMembers = id ? getProjectMembers(id) : [];
 
   if (!project) {
     return (
@@ -80,7 +81,7 @@ const TeamManagement = () => {
 
       {/* Team Members */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {project.teamMembers.map((member) => (
+        {projectMembers.map((member) => (
           <Card key={member.id} className="border-border bg-card">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -115,9 +116,9 @@ const TeamManagement = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         className="text-destructive"
-                        onClick={() => removeTeamMember(project.id, member.id)}
+                        onClick={() => removeMemberFromProject(project.id, member.id)}
                       >
-                        Remove Member
+                        Remove from Project
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -142,7 +143,7 @@ const TeamManagement = () => {
         ))}
 
         {/* Empty State */}
-        {project.teamMembers.length === 0 && (
+        {projectMembers.length === 0 && (
           <div className="col-span-full text-center py-12">
             <UserPlus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">No team members yet</h3>

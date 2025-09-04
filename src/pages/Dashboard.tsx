@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Filter, MoreVertical, Clock, Users, AlertCircle, CheckCircle2, Edit3 } from "lucide-react";
+import { Plus, Search, Filter, MoreVertical, Clock, Users, AlertCircle, CheckCircle2, Edit3, UserCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Project } from "@/zustand/projectStore";
 import { useProjectStore } from "@/zustand/projectStore";
 import { ProjectForm } from "@/components/ProjectForm";
+import { ProjectTeamSelector } from "@/components/ProjectTeamSelector";
 
 
 
@@ -46,6 +47,8 @@ const Dashboard = () => {
   const [sortBy, setSortBy] = useState("recent");
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>();
+  const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -129,6 +132,18 @@ const Dashboard = () => {
                     }}>
                       Edit Project
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      setSelectedProjectId(project.id);
+                      setIsTeamSelectorOpen(true);
+                    }}>
+                      <UserCheck className="w-4 h-4 mr-2" />
+                      Assign Team
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to={`/projects/${project.id}/team`}>
+                        Manage Team
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem>Duplicate</DropdownMenuItem>
                     <DropdownMenuItem>Export</DropdownMenuItem>
                     <DropdownMenuItem 
@@ -192,6 +207,15 @@ const Dashboard = () => {
           setEditingProject(undefined);
         }}
         project={editingProject}
+      />
+
+      <ProjectTeamSelector
+        isOpen={isTeamSelectorOpen}
+        onClose={() => {
+          setIsTeamSelectorOpen(false);
+          setSelectedProjectId("");
+        }}
+        projectId={selectedProjectId}
       />
     </div>
   );
