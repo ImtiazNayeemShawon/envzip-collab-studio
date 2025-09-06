@@ -93,7 +93,7 @@ export const ProjectTeamSelector = ({ isOpen, onClose, projectId }: ProjectTeamS
         </DialogHeader>
 
         <div className="space-y-4 max-h-96 overflow-y-auto">
-          {globalTeamMembers.map((member) => {
+          {globalTeamMembers?.map((member) => {
             const isAssigned = assignedMemberIds.includes(member.id);
             
             return (
@@ -150,7 +150,7 @@ export const ProjectTeamSelector = ({ isOpen, onClose, projectId }: ProjectTeamS
 
         <div className="flex justify-between items-center pt-4 border-t border-border">
           <p className="text-sm text-muted-foreground">
-            {assignedMemberIds.length} of {globalTeamMembers.length} members assigned
+            {assignedMemberIds?.length} of {globalTeamMembers?.length} members assigned
           </p>
           
           <Button onClick={onClose} className="bg-primary text-primary-foreground hover:bg-primary/90">
