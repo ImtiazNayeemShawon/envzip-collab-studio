@@ -34,7 +34,7 @@ export const useProjectStore = create<any>((set, get) => ({
     })),
 
   // Get project by ID
-  getProjectById: (id) => get().projects.find((proj) => proj.id === id),
+  getProjectById: ($id) => get().projects.find((proj) => proj.$id === $id),
 
   // Assign member to project
   assignMemberToProject: (projectId, memberId) =>

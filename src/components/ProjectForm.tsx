@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useProjectStore, Project } from "@/zustand/projectStore";
 import { useToast } from "@/hooks/use-toast";
-import { createProject, updateProject as updateProjectonDB } from "@/appwrite/Projects";
+import { createProject, updateProject as updateProjectonDB } from "@/appwrite/projectHandler";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),

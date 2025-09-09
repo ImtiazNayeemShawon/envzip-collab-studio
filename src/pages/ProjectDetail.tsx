@@ -8,14 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import VersionHistory from "@/components/VersionHistory";
+import useEnvVariableStore from "@/zustand/envStore";
+import { getProjectById } from "@/appwrite/projectHandler";
+
 
 interface EnvVariable {
-  id: string;
+  $id: string;
   key: string;
   value: string;
   description?: string;
@@ -27,66 +31,7 @@ interface EnvVariable {
   editedBy?: string;
 }
 
-const variables: EnvVariable[] = [
-  {
-    id: "1",
-    key: "API_KEY",
-    value: "sk-1234567890abcdef",
-    description: "Main API key for external service",
-    type: "secret",
-    lastModified: "2 minutes ago",
-    modifiedBy: "Alice Johnson",
-    environment: "development",
-    isEditing: true,
-    editedBy: "Alice Johnson"
-  },
-  {
-    id: "2",
-    key: "DATABASE_URL",
-    value: "postgresql://user:pass@localhost:5432/mydb",
-    description: "Database connection string",
-    type: "secret",
-    lastModified: "1 hour ago",
-    modifiedBy: "Bob Chen",
-    environment: "development",
-    isEditing: true,
-    editedBy: "Bob Chen"
-  },
-  {
-    id: "3",
-    key: "PORT",
-    value: "3000",
-    description: "Server port number",
-    type: "number",
-    lastModified: "1 day ago",
-    modifiedBy: "Carol Davis",
-    environment: "development"
-  },
-  {
-    id: "4",
-    key: "DEBUG",
-    value: "true",
-    description: "Enable debug mode",
-    type: "boolean",
-    lastModified: "2 days ago",
-    modifiedBy: "David Wilson",
-    environment: "development"
-  },
-  {
-    id: "5",
-    key: "REDIS_URL",
-    value: "redis://localhost:6379",
-    description: "Redis connection URL",
-    type: "string",
-    lastModified: "3 days ago",
-    modifiedBy: "Alice Johnson",
-    environment: "production"
-  }
-];
-
 const VariableValue = ({ variable }: { variable: EnvVariable }) => {
-
-
   const [isVisible, setIsVisible] = useState(false);
 
   if (variable.type === "secret" && !isVisible) {
@@ -162,8 +107,27 @@ const ProjectDetail = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [editingVariable, setEditingVariable] = useState<EnvVariable | null>(null);
   const [newVariable, setNewVariable] = useState({ key: "", value: "", description: "", type: "string" });
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [project, setProject] = useState<any>(null);
 
-  const filteredVariables = variables.filter(variable =>
+
+  const addEnvVariable = useEnvVariableStore((state) => state.addEnvVariable);
+  const EnvVariables = useEnvVariableStore((state) => state.envVariables);
+  const deleteEnvVariable = useEnvVariableStore((state) => state.deleteEnvVariable);
+  const updateEnvVariable = useEnvVariableStore((state) => state.updateEnvVariable);
+  const fetchEnvVariables = useEnvVariableStore((state) => state.fetchEnvVariables);
+
+  useEffect(() => {
+    async function fetchProject() {
+      await getProjectById(id || "").then(proj => setProject(proj));
+    }
+    if (id) {
+      fetchEnvVariables(id);
+    }
+    fetchProject()
+  }, [id]);
+
+  const filteredVariables = EnvVariables.filter(variable =>
     variable.environment === selectedEnvironment &&
     (variable.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
       variable.description?.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -178,11 +142,86 @@ const ProjectDetail = () => {
   };
 
   const handleAddVariable = () => {
+    if (!newVariable.key.trim()) {
+      toast({
+        title: "Error",
+        description: "Variable key is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addEnvVariable({
+      projectId: id || "",
+      environment: selectedEnvironment,
+      key: newVariable.key,
+      value: newVariable.value,
+      description: newVariable.description,
+      type: newVariable.type,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as any);
+
+    setNewVariable({ key: "", value: "", description: "", type: "string" });
+
     toast({
       title: "Variable added",
       description: `${newVariable.key} has been added to ${selectedEnvironment}`,
     });
+  };
+
+  const handleEditVariable = (variable: EnvVariable) => {
+    setEditingVariable({ ...variable });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateVariable = () => {
+    if (!editingVariable) return;
+
+    if (!editingVariable.key.trim()) {
+      toast({
+        title: "Error",
+        description: "Variable key is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateEnvVariable(editingVariable.$id, {
+      projectId: id || "",
+      key: editingVariable.key,
+      value: editingVariable.value,
+      description: editingVariable.description,
+      type: editingVariable.type,
+      environment: editingVariable.environment,
+      updatedAt: new Date().toISOString(),
+    });
+
+    setIsEditDialogOpen(false);
+    setEditingVariable(null);
+
+    toast({
+      title: "Variable updated",
+      description: `${editingVariable.key} has been updated successfully`,
+    });
+  };
+
+  const handleDeleteVariable = (variable: EnvVariable) => {
+    deleteEnvVariable(variable.$id);
+
+    toast({
+      title: "Variable deleted",
+      description: `${variable.key} has been deleted from ${variable.environment}`,
+    });
+  };
+
+  const resetNewVariable = () => {
     setNewVariable({ key: "", value: "", description: "", type: "string" });
+  };
+
+  const resetEditVariable = () => {
+    setEditingVariable(null);
+    setIsEditDialogOpen(false);
   };
 
   return (
@@ -191,8 +230,8 @@ const ProjectDetail = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">E-commerce API</h1>
-            <p className="text-muted-foreground">Environment variables and configuration</p>
+            <h1 className="text-3xl font-bold text-foreground">{project?.name}</h1>
+            <p className="text-muted-foreground">{project?.description}</p>
           </div>
           <Badge variant="secondary" className="status-synced">
             <GitBranch className="w-3 h-3 mr-1" />
@@ -244,10 +283,11 @@ const ProjectDetail = () => {
                 />
               </div>
               <Badge variant="secondary" className="text-muted-foreground">
-                {filteredVariables.length} variables
+                {filteredVariables?.length} variables
               </Badge>
             </div>
 
+            {/* Add Variable Dialog */}
             <Dialog>
               <DialogTrigger asChild>
                 <Button className="bg-primary hover:bg-primary-hover text-primary-foreground">
@@ -304,9 +344,18 @@ const ProjectDetail = () => {
                       rows={3}
                     />
                   </div>
-                  <Button onClick={handleAddVariable} className="w-full">
-                    Add Variable
-                  </Button>
+                  <div className="flex space-x-2">
+                    <DialogClose asChild>
+                      <Button variant="outline" onClick={resetNewVariable} className="flex-1">
+                        Cancel
+                      </Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button onClick={handleAddVariable} className="flex-1">
+                        Add Variable
+                      </Button>
+                    </DialogClose>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -351,7 +400,7 @@ const ProjectDetail = () => {
                       <TableCell>
                         <div className="text-sm">
                           <div className="text-foreground">{variable.lastModified}</div>
-                          <div className="text-muted-foreground">by {variable.modifiedBy}</div>
+                          <div className="text-muted-foreground">by {variable?.lastUpdatedBy}</div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -359,7 +408,7 @@ const ProjectDetail = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setEditingVariable(variable)}
+                            onClick={() => handleEditVariable(variable)}
                             className="h-8 w-8 p-0"
                           >
                             <Edit3 className="w-4 h-4" />
@@ -372,13 +421,35 @@ const ProjectDetail = () => {
                           >
                             <Copy className="w-4 h-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Variable</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete the variable "{variable.key}"?
+                                  This action cannot be undone and will remove it from the {variable.environment} environment.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteVariable(variable)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -390,8 +461,76 @@ const ProjectDetail = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Edit Variable Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Edit Variable</DialogTitle>
+          </DialogHeader>
+          {editingVariable && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-key">Key</Label>
+                <Input
+                  id="edit-key"
+                  value={editingVariable.key}
+                  onChange={(e) => setEditingVariable({ ...editingVariable, key: e.target.value })}
+                  placeholder="VARIABLE_NAME"
+                  className="font-mono"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-value">Value</Label>
+                <Input
+                  id="edit-value"
+                  value={editingVariable.value}
+                  onChange={(e) => setEditingVariable({ ...editingVariable, value: e.target.value })}
+                  placeholder="variable_value"
+                  className="font-mono"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-type">Type</Label>
+                <Select
+                  value={editingVariable.type}
+                  onValueChange={(value) => setEditingVariable({ ...editingVariable, type: value as any })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="string">String</SelectItem>
+                    <SelectItem value="number">Number</SelectItem>
+                    <SelectItem value="boolean">Boolean</SelectItem>
+                    <SelectItem value="secret">Secret</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-description">Description (optional)</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editingVariable.description || ""}
+                  onChange={(e) => setEditingVariable({ ...editingVariable, description: e.target.value })}
+                  placeholder="Describe what this variable is used for..."
+                  rows={3}
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button variant="outline" onClick={resetEditVariable} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateVariable} className="flex-1">
+                  Update Variable
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Version History Modal */}
-      <VersionHistory open={showHistory} onOpenChange={setShowHistory} />
+      <VersionHistory open={showHistory} onOpenChange={setShowHistory} $id={id} />
     </div>
   );
 };

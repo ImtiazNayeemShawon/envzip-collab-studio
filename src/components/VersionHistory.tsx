@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, User, GitCommit, RotateCcw, Plus, Minus, Edit3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import {
+  getVersionHistory,
+  createVersionOnUpdate,
+  createVersionOnDelete,
+  createInitialVersion
+} from "../appwrite/versionHandler";
+import { rollbackEnvVariable } from "@/appwrite/envhandler";
+
 
 interface VersionChange {
   type: "added" | "removed" | "modified";
@@ -24,78 +32,8 @@ interface Version {
   message?: string;
 }
 
-const mockVersions: Version[] = [
-  {
-    id: "v1.2.3",
-    timestamp: "2024-01-15 14:30:00",
-    author: "Alice Johnson",
-    environment: "development",
-    message: "Update API key and add Redis configuration",
-    changes: [
-      {
-        type: "modified",
-        key: "API_KEY",
-        oldValue: "sk-old123456789",
-        newValue: "sk-1234567890abcdef",
-        description: "Updated to new API key from vendor"
-      },
-      {
-        type: "added",
-        key: "REDIS_URL",
-        newValue: "redis://localhost:6379",
-        description: "Added Redis connection for caching"
-      }
-    ]
-  },
-  {
-    id: "v1.2.2",
-    timestamp: "2024-01-14 09:15:00",
-    author: "Bob Chen",
-    environment: "development",
-    message: "Database connection updates",
-    changes: [
-      {
-        type: "modified",
-        key: "DATABASE_URL",
-        oldValue: "postgresql://user:pass@localhost:5432/olddb",
-        newValue: "postgresql://user:pass@localhost:5432/mydb",
-        description: "Updated database name"
-      },
-      {
-        type: "removed",
-        key: "OLD_FEATURE_FLAG",
-        oldValue: "true",
-        description: "Removed deprecated feature flag"
-      }
-    ]
-  },
-  {
-    id: "v1.2.1",
-    timestamp: "2024-01-13 16:45:00",
-    author: "Carol Davis",
-    environment: "development",
-    message: "Initial port configuration",
-    changes: [
-      {
-        type: "added",
-        key: "PORT",
-        newValue: "3000",
-        description: "Set default server port"
-      },
-      {
-        type: "added",
-        key: "DEBUG",
-        newValue: "true",
-        description: "Enable debug mode for development"
-      }
-    ]
-  }
-];
 
-interface VersionHistoryProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+
 
 const ChangeIcon = ({ type }: { type: VersionChange["type"] }) => {
   switch (type) {
@@ -149,23 +87,102 @@ const ChangeValue = ({ change }: { change: VersionChange }) => {
   );
 };
 
-const VersionHistory = ({ open, onOpenChange }: VersionHistoryProps) => {
+const VersionHistory = ({ open, onOpenChange, $id }: any) => {
   const { toast } = useToast();
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
+  const [versions, setVersions] = useState<Version[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleRollback = (versionId: string) => {
-    toast({
-      title: "Version rollback initiated",
-      description: `Rolling back to version ${versionId}`,
-    });
+
+  useEffect(() => {
+    if (open) fetchVersions();
+  }, [open]);
+
+  const fetchVersions = async () => {
+    setLoading(true);
+    try {
+      const versionDocs = await getVersionHistory($id);
+      // Sort by timestamp descending (latest first)
+      const sortedDocs = versionDocs.sort(
+        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      const mappedVersions: Version[] = sortedDocs.map((v: any) => ({
+        id: v.versionId,
+        timestamp: v.createdAt,
+        author: v.createdBy,
+        environment: v.environment,
+        message: v.message,
+        changes: v.changes.map((c: any) => ({
+          type: c.changeType as "added" | "removed" | "modified",
+          key: c.field,
+          oldValue: c.oldValue,
+          newValue: c.newValue,
+          description: c.description,
+        })),
+      }));
+      setVersions(mappedVersions);
+    } catch (err) {
+      console.error("❌ Error fetching versions:", err);
+      toast({
+        title: "Failed to load versions",
+        description: "Check console for details",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRollbackChange = (versionId: string, changeKey: string) => {
-    toast({
-      title: "Variable rollback initiated",
-      description: `Rolling back ${changeKey} to version ${versionId}`,
-    });
-  };
+  // const handleRollback = async (versionId: string) => {
+  //   try {
+  //     const version = versions.find(v => v.id === versionId);
+  //     if (!version) return;
+
+  //     // Iterate through all changes in the version
+  //     for (const change of version.changes) {
+  //       await restoreEnvVariable(change); // Restore function per variable
+  //     }
+
+  //     toast({
+  //       title: "Rollback successful",
+  //       description: `Rolled back to version ${versionId}`,
+  //     });
+
+  //     fetchVersions(); // Refresh version list after rollback
+  //   } catch (err) {
+  //     console.error("❌ Full rollback failed:", err);
+  //     toast({
+  //       title: "Rollback failed",
+  //       description: "Check console for details",
+  //     });
+  //   }
+  // };
+
+  // const handleRollbackChange = async (versionId: string, changeKey: string) => {
+  //   try {
+  //     const version = versions.find(v => v.id === versionId);
+  //     if (!version) return;
+
+  //     const change = version.changes.find(c => c.key === changeKey);
+  //     if (!change) throw new Error("Variable not found in version");
+
+  //     await restoreEnvVariable(change);
+
+  //     toast({
+  //       title: "Variable rollback successful",
+  //       description: `${changeKey} rolled back to version ${versionId}`,
+  //     });
+
+  //     fetchVersions(); // Refresh version list
+  //   } catch (err) {
+  //     console.error("❌ Variable rollback failed:", err);
+  //     toast({
+  //       title: "Rollback failed",
+  //       description: "Check console for details",
+  //     });
+  //   }
+  // };
+
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -182,13 +199,13 @@ const VersionHistory = ({ open, onOpenChange }: VersionHistoryProps) => {
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-foreground mb-3">Recent Versions</h3>
             <ScrollArea className="h-[500px] pr-4">
-              {mockVersions.map((version, index) => (
+              {versions.map((version, index) => (
                 <div key={version.id} className="space-y-2">
                   <div
                     className={`
                       p-4 rounded-lg border cursor-pointer transition-smooth
-                      ${selectedVersion === version.id 
-                        ? "border-primary bg-primary/5" 
+                      ${selectedVersion === version.id
+                        ? "border-primary bg-primary/5"
                         : "border-border hover:border-muted-foreground hover:bg-muted/30"
                       }
                     `}
@@ -196,7 +213,7 @@ const VersionHistory = ({ open, onOpenChange }: VersionHistoryProps) => {
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center space-x-2">
-                        <Badge variant="secondary" className="font-mono text-xs">
+                        <Badge variant="secondary" className="font-mono text-[10px]">
                           {version.id}
                         </Badge>
                         <Badge variant="outline" className="capitalize text-xs">
@@ -222,13 +239,13 @@ const VersionHistory = ({ open, onOpenChange }: VersionHistoryProps) => {
                         <User className="w-3 h-3" />
                         <span>{version.author}</span>
                         <Calendar className="w-3 h-3 ml-2" />
-                        <span>{version.timestamp}</span>
+                        <span>{new Date(version.timestamp).toLocaleString()}</span>
                       </div>
-                      
+
                       {version.message && (
                         <p className="text-sm text-foreground">{version.message}</p>
                       )}
-                      
+
                       <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                         <span>{version.changes.length} changes</span>
                         <span>•</span>
@@ -240,7 +257,7 @@ const VersionHistory = ({ open, onOpenChange }: VersionHistoryProps) => {
                       </div>
                     </div>
                   </div>
-                  {index < mockVersions.length - 1 && <Separator className="my-2" />}
+                  {index < versions.length - 1 && <Separator className="my-2" />}
                 </div>
               ))}
             </ScrollArea>
@@ -251,10 +268,10 @@ const VersionHistory = ({ open, onOpenChange }: VersionHistoryProps) => {
             <h3 className="text-sm font-medium text-foreground mb-3">
               {selectedVersion ? `Changes in ${selectedVersion}` : "Select a version to view changes"}
             </h3>
-            
+
             {selectedVersion ? (
               <ScrollArea className="h-[500px] pr-4">
-                {mockVersions
+                {versions
                   .find(v => v.id === selectedVersion)
                   ?.changes.map((change, index) => (
                     <div key={index} className="p-4 rounded-lg border border-border mb-3">
@@ -262,19 +279,19 @@ const VersionHistory = ({ open, onOpenChange }: VersionHistoryProps) => {
                         <div className="flex items-center space-x-2">
                           <ChangeIcon type={change.type} />
                           <code className="font-mono font-medium syntax-key">{change.key}</code>
-                          <Badge 
-                            variant="secondary" 
+                          <Badge
+                            variant="secondary"
                             className={`
                               capitalize text-xs
-                              ${change.type === "added" ? "status-synced" : 
-                                change.type === "removed" ? "status-conflict" : 
-                                "status-editing"}
+                              ${change.type === "added" ? "status-synced" :
+                                change.type === "removed" ? "status-conflict" :
+                                  "status-editing"}
                             `}
                           >
                             {change.type}
                           </Badge>
                         </div>
-                        
+
                         <Button
                           variant="ghost"
                           size="sm"
@@ -287,7 +304,7 @@ const VersionHistory = ({ open, onOpenChange }: VersionHistoryProps) => {
                       </div>
 
                       <ChangeValue change={change} />
-                      
+
                       {change.description && (
                         <p className="text-sm text-muted-foreground mt-2">
                           {change.description}

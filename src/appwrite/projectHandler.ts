@@ -42,21 +42,45 @@ export async function createProject(data) {
   }
 }
 
-// ✅ Read projects for current user automatically
+// ✅ Read projects for current user automatically with env counts
 export async function getProjects() {
   try {
     if (!currentUser) throw new Error("User not logged in");
 
-    const queries = [Query.equal("ownerId", currentUser?.$id)];
+    // Step 1: Get projects for this user
+    const queries = [Query.equal("ownerId", currentUser.$id)];
     const response = await database.listDocuments(databaseId, tableId, queries);
 
-    // Parse JSON-like fields safely
     const projects = response.documents.map((doc) => ({
       ...doc,
-      environments: safeParse(doc.environments, []),
-      collaborators: safeParse(doc.collaborators, []),
       settings: safeParse(doc.settings, {}),
     }));
+
+    // Collect all project IDs
+    const projectIds = projects.map((p) => p.$id);
+
+    if (projectIds.length > 0) {
+      // Step 2: Fetch env variables where projectId IN projectIds
+      const envResponse = await database.listDocuments(databaseId, "envVariables", [
+        Query.equal("projectId", projectIds), // make sure to use Query.in
+      ]);
+
+      // Group envs by projectId
+      const envMap = envResponse.documents.reduce((acc, env) => {
+        if (!acc[env.projectId]) acc[env.projectId] = [];
+        acc[env.projectId].push(env);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      // Step 3: Attach counts & latest 3 envs
+      projects.forEach((project) => {
+        const envs = envMap[project.$id] || [];
+        // Sort by creation date (assuming $createdAt exists) descending
+        envs.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
+        project.envCount = envs.length;
+        project.latestEnvs = envs.slice(0, 3); // latest 3 envs
+      });
+    }
 
     return projects;
   } catch (error) {
@@ -64,6 +88,7 @@ export async function getProjects() {
     throw error;
   }
 }
+
 
 // ✅ Get single project by ID
 export async function getProjectById(projectId) {

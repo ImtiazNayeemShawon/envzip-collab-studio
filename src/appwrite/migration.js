@@ -56,6 +56,8 @@ const tables = [
       { key: "description", type: "string", required: false },
       { key: "tags", type: "array", required: false, default: [] },
       { key: "lastUpdatedBy", type: "string", required: false },
+      { key: "stage", type: "string", required: false },
+
       {
         key: "createdAt",
         type: "datetime",

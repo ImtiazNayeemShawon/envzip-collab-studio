@@ -12,8 +12,8 @@ import { ProjectTeamSelector } from "@/components/ProjectTeamSelector";
 import { useQuery } from "@tanstack/react-query";
 import LoadingScreen from "@/components/loading";
 import { useEffect } from "react";
-import { getProjects } from "@/appwrite/Projects";
-import { deleteProject as deleteProjectFromDB } from "@/appwrite/Projects";
+import { getProjects } from "@/appwrite/projectHandler";
+import { deleteProject as deleteProjectFromDB } from "@/appwrite/projectHandler";
 
 
 
@@ -135,7 +135,7 @@ const Dashboard = () => {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <Link to={`/project/${project.id}`}>
+                  <Link to={`/project/${project.$id}`}>
                     <h3 className="font-semibold text-foreground group-hover:text-primary transition-smooth mb-1">
                       {project.name}
                     </h3>
@@ -186,12 +186,12 @@ const Dashboard = () => {
             <CardContent>
               {/* Environment Status */}
               <div className="space-y-2 mb-4">
-                {project?.environments?.map((env) => (
+                {project?.latestEnvs?.map((env) => (
                   <div key={env.name} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
                     <div className="flex items-center space-x-2">
-                      <StatusIcon status={env.status} />
-                      <span className="text-sm font-medium capitalize text-foreground">{env.name}</span>
-                      <StatusBadge status={env.status} />
+                      <StatusIcon status={env.environment} />
+                      <span className="text-sm font-medium capitalize text-foreground">{env.key}</span>
+                      <StatusBadge status={env.environment} />
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {env.lastUpdated}
@@ -207,7 +207,7 @@ const Dashboard = () => {
                   <span>{project?.collaborators.length} collaborators</span>
                 </div>
                 <div className="text-xs">
-                  {project.environments?.length} variables
+                  {project?.envCount} variables
                 </div>
               </div>
             </CardContent>
