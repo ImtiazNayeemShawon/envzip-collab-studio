@@ -48,14 +48,16 @@ const tables = [
     name: "EnvVariables",
     columns: [
       { key: "variableId", type: "string", required: true },
-      { key: "projectId", type: "string", required: true },
+      { key: "projectId", type: "string", required: true }, // 🔗 Relation to Projects
       { key: "environment", type: "string", required: true },
       { key: "key", type: "string", required: true },
-      { key: "value", type: "string", required: true }, // encrypted
+      { key: "value", type: "string", required: true },
       { key: "isSecret", type: "boolean", required: true, default: false },
       { key: "description", type: "string", required: false },
-      { key: "tags", type: "array", required: false, default: [] }, // stored as JSON string
+      { key: "tags", type: "array", required: false, default: [] },
       { key: "lastUpdatedBy", type: "string", required: false },
+      { key: "stage", type: "string", required: false },
+
       {
         key: "createdAt",
         type: "datetime",
@@ -75,10 +77,11 @@ const tables = [
     name: "Versions",
     columns: [
       { key: "versionId", type: "string", required: true },
-      { key: "projectId", type: "string", required: true },
+      { key: "envVariableId", type: "string", required: true }, // 🔗 Relation to EnvVariables
+      { key: "projectId", type: "string", required: true }, // optional shortcut to project
       { key: "environment", type: "string", required: true },
       { key: "versionNumber", type: "integer", required: true, default: 1 },
-      { key: "changes", type: "array", required: true, default: [] }, // stored as JSON string
+      { key: "changes", type: "array", required: true, default: [] },
       { key: "createdBy", type: "string", required: true },
       {
         key: "createdAt",
@@ -94,11 +97,11 @@ const tables = [
     name: "SyncLogs",
     columns: [
       { key: "logId", type: "string", required: true },
-      { key: "projectId", type: "string", required: true },
+      { key: "projectId", type: "string", required: true }, // 🔗 Relation to Projects
       { key: "environment", type: "string", required: true },
       { key: "userId", type: "string", required: true },
-      { key: "action", type: "string", required: true }, // push|pull|conflict
-      { key: "status", type: "string", required: true }, // success|error|pending
+      { key: "action", type: "string", required: true },
+      { key: "status", type: "string", required: true },
       { key: "details", type: "string", required: false },
       {
         key: "timestamp",

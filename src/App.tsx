@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import ProjectDetail from "./pages/ProjectDetail";
-import TeamManagement from "./pages/TeamManagement";
+// import TeamManagement from "./pages/TeamManagement";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -55,11 +55,11 @@ const App = () => (
               </ProtectedRoute>
             } />
 
-            <Route path="/project/:id/team" element={
+            {/* <Route path="/project/:id/team" element={
               <ProtectedRoute>
                 <Layout><TeamManagement /></Layout>
               </ProtectedRoute>
-            } />
+            } /> */}
 
             <Route path="/settings" element={
               <ProtectedRoute>

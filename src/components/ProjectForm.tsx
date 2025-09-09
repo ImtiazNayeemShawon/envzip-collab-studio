@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useProjectStore, Project } from "@/zustand/projectStore";
 import { useToast } from "@/hooks/use-toast";
+import { createProject, updateProject as updateProjectonDB } from "@/appwrite/projectHandler";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -37,26 +38,26 @@ export const ProjectForm = ({ isOpen, onClose, project }: ProjectFormProps) => {
     },
   });
 
-  const onSubmit = (data: ProjectFormData) => {
+  const onSubmit = async (data: ProjectFormData) => {
     if (project) {
-      updateProject(project.id, data);
+      updateProject(project.$id, data);
+      updateProjectonDB(project.$id, data);
       toast({
         title: "Project updated",
         description: "Project has been updated successfully.",
       });
     } else {
-      addProject({
+      let projectPayload = {
         name: data.name,
+        ownerId: "", // Replace with actual user ID
         description: data.description,
-        environments: [
-          { name: "development", status: "editing", lastUpdated: "Just now", updatedBy: "You" },
-          { name: "staging", status: "synced", lastUpdated: "Never", updatedBy: "-" },
-          { name: "production", status: "synced", lastUpdated: "Never", updatedBy: "-" }
-        ],
-        collaborators: 0,
-        totalVariables: 0,
-        assignedMembers: []
-      });
+        environments: JSON.stringify([""]),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        collaborators: JSON.stringify([""]),
+      }
+      addProject(projectPayload)
+      const project = await createProject(projectPayload)
       toast({
         title: "Project created",
         description: "New project has been created successfully.",
@@ -74,14 +75,7 @@ export const ProjectForm = ({ isOpen, onClose, project }: ProjectFormProps) => {
             <DialogTitle className="text-foreground">
               {project ? "Edit Project" : "Create New Project"}
             </DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+
           </div>
         </DialogHeader>
 

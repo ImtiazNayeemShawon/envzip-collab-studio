@@ -59,7 +59,7 @@ const CollaborationPanel = () => {
             <Users className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-foreground">Team Members</h3>
             <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-              {globalTeamMembers.filter(c => c.status === "online").length} online
+              {globalTeamMembers?.filter(c => c.status === "online").length} online
             </span>
           </div>
           <div className="flex items-center space-x-1">
@@ -85,7 +85,7 @@ const CollaborationPanel = () => {
 
       {/* Team Members List */}
       <div className="p-4 space-y-3">
-        {globalTeamMembers.map((member) => (
+        {globalTeamMembers?.map((member) => (
           <div
             key={member.id}
             className={`

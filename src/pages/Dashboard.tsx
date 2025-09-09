@@ -6,11 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Project } from "@/zustand/projectStore";
 import { useProjectStore } from "@/zustand/projectStore";
 import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectTeamSelector } from "@/components/ProjectTeamSelector";
-
+import { useQuery } from "@tanstack/react-query";
+import LoadingScreen from "@/components/loading";
+import { useEffect } from "react";
+import { getProjects } from "@/appwrite/projectHandler";
+import { deleteProject as deleteProjectFromDB } from "@/appwrite/projectHandler";
 
 
 
@@ -42,18 +45,41 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const Dashboard = () => {
+
   const { projects, deleteProject } = useProjectStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("recent");
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | undefined>();
+  const [editingProject, setEditingProject] = useState<any>();
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const setProjects = useProjectStore((state) => state.setProjects)
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     project.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await getProjects();
+        setProjects(res);
+        console.log(res);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+
+
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -65,7 +91,7 @@ const Dashboard = () => {
             Manage environment variables across all your projects
           </p>
         </div>
-        <Button 
+        <Button
           onClick={() => setIsProjectFormOpen(true)}
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
@@ -109,7 +135,7 @@ const Dashboard = () => {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <Link to={`/project/${project.id}`}>
+                  <Link to={`/project/${project.$id}`}>
                     <h3 className="font-semibold text-foreground group-hover:text-primary transition-smooth mb-1">
                       {project.name}
                     </h3>
@@ -144,11 +170,11 @@ const Dashboard = () => {
                         Manage Team
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                    
                     <DropdownMenuItem>Export</DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="text-destructive"
-                      onClick={() => deleteProject(project.id)}
+                      onClick={() => { deleteProject(project.$id), deleteProjectFromDB(project.$id) }}
                     >
                       Delete
                     </DropdownMenuItem>
@@ -160,12 +186,12 @@ const Dashboard = () => {
             <CardContent>
               {/* Environment Status */}
               <div className="space-y-2 mb-4">
-                {project.environments.map((env) => (
+                {project?.latestEnvs?.map((env) => (
                   <div key={env.name} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
                     <div className="flex items-center space-x-2">
-                      <StatusIcon status={env.status} />
-                      <span className="text-sm font-medium capitalize text-foreground">{env.name}</span>
-                      <StatusBadge status={env.status} />
+                      <StatusIcon status={env.environment} />
+                      <span className="text-sm font-medium capitalize text-foreground">{env.key}</span>
+                      <StatusBadge status={env.environment} />
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {env.lastUpdated}
@@ -178,10 +204,10 @@ const Dashboard = () => {
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <div className="flex items-center space-x-1">
                   <Users className="w-4 h-4" />
-                  <span>{project.collaborators} collaborators</span>
+                  <span>{project?.collaborators.length} collaborators</span>
                 </div>
                 <div className="text-xs">
-                  {project.totalVariables} variables
+                  {project?.envCount} variables
                 </div>
               </div>
             </CardContent>
@@ -190,15 +216,13 @@ const Dashboard = () => {
       </div>
 
       {/* Empty State */}
-      {filteredProjects.length === 0 && (
-        <div className="text-center py-12">
-          <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No projects found</h3>
-          <p className="text-muted-foreground">
-            Try adjusting your search criteria or create a new project.
-          </p>
-        </div>
-      )}
+      {isLoading ? <div className="mx-auto  h-96 flex flex-col items-center"><LoadingScreen /></div> : <div className="text-center py-12">
+        <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-foreground mb-2">No projects found</h3>
+        <p className="text-muted-foreground">
+          Try adjusting your search criteria or create a new project.
+        </p>
+      </div>}
 
       <ProjectForm
         isOpen={isProjectFormOpen}
