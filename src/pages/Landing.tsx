@@ -64,10 +64,12 @@ const Landing = () => {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
+              <Link to="https://github.com/ImtiazNayeemShawon/envzip-collab-studio" >
               <Button variant="outline" size="lg" className="h-12 px-8">
                 <Github className="mr-2 h-5 w-5" />
                 View on GitHub
               </Button>
+              </Link>
             </div>
           </div>
 

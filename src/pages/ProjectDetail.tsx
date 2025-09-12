@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Plus, Edit3, Copy, Trash2, History, GitBranch, Eye, EyeOff, Search, Download, Upload } from "lucide-react";
+import { Plus, Edit3, Copy, Trash2, History, GitBranch, Eye, EyeOff, Search, Download, Upload, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,6 @@ import VersionHistory from "@/components/VersionHistory";
 import useEnvVariableStore from "@/zustand/envStore";
 import { getProjectById } from "@/appwrite/projectHandler";
 
-
 interface EnvVariable {
   $id: string;
   key: string;
@@ -29,6 +28,9 @@ interface EnvVariable {
   environment: "development" | "staging" | "production";
   isEditing?: boolean;
   editedBy?: string;
+  lastUpdatedBy?: string;
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 const VariableValue = ({ variable }: { variable: EnvVariable }) => {
@@ -109,27 +111,83 @@ const ProjectDetail = () => {
   const [newVariable, setNewVariable] = useState({ key: "", value: "", description: "", type: "string" });
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [project, setProject] = useState<any>(null);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
 
+  // Enhanced store integration with real-time
+  const {
+    envVariables,
+    loading,
+    error,
+    addEnvVariable,
+    deleteEnvVariable,
+    updateEnvVariable,
+    fetchEnvVariables,
+    startRealtime,
+    stopRealtime,
+    clearStore,
+    refresh
+  } = useEnvVariableStore();
 
-  const addEnvVariable = useEnvVariableStore((state) => state.addEnvVariable);
-  const EnvVariables = useEnvVariableStore((state) => state.envVariables);
-  const deleteEnvVariable = useEnvVariableStore((state) => state.deleteEnvVariable);
-  const updateEnvVariable = useEnvVariableStore((state) => state.updateEnvVariable);
-  const fetchEnvVariables = useEnvVariableStore((state) => state.fetchEnvVariables);
-
+  // Setup real-time connection and data fetching
   useEffect(() => {
-    async function fetchProject() {
-      await getProjectById(id || "").then(proj => setProject(proj));
-    }
-    if (id) {
-      fetchEnvVariables(id);
-    }
-    fetchProject()
-  }, [id]);
+    if (!id) return;
 
-  const filteredVariables = EnvVariables.filter(variable =>
+    console.log(`🔄 Setting up ProjectDetail for project: ${id}`);
+
+    const setupProject = async () => {
+      try {
+        // Fetch project details
+        const projectData = await getProjectById(id);
+        setProject(projectData);
+        console.log(`✅ Project loaded: ${projectData?.name}`);
+
+        // Clear previous data and fetch fresh environment variables
+        clearStore();
+        await fetchEnvVariables(id);
+        console.log(`✅ Environment variables loaded for project: ${id}`);
+
+        // Start real-time subscription
+        startRealtime(id);
+        setIsRealtimeConnected(true);
+        console.log(`✅ Real-time connection established for project: ${id}`);
+
+      } catch (error) {
+        console.error(`❌ Error setting up project ${id}:`, error);
+        toast({
+          title: "Error",
+          description: "Failed to load project data",
+          variant: "destructive",
+        });
+      }
+    };
+
+    setupProject();
+
+    // Cleanup on unmount or project change
+    return () => {
+      console.log(`🧹 Cleaning up ProjectDetail for project: ${id}`);
+      stopRealtime();
+      setIsRealtimeConnected(false);
+    };
+  }, [id, fetchEnvVariables, startRealtime, stopRealtime, clearStore]);
+
+  // Handle real-time connection errors
+  useEffect(() => {
+    if (error) {
+      console.error("❌ Environment variables error:", error);
+      setIsRealtimeConnected(false);
+      toast({
+        title: "Connection Error",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  // Filter variables based on environment and search
+  const filteredVariables = envVariables.filter(variable =>
     variable.environment === selectedEnvironment &&
-    (variable.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (variable.key?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       variable.description?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
@@ -141,7 +199,7 @@ const ProjectDetail = () => {
     });
   };
 
-  const handleAddVariable = () => {
+  const handleAddVariable = async () => {
     if (!newVariable.key.trim()) {
       toast({
         title: "Error",
@@ -151,23 +209,36 @@ const ProjectDetail = () => {
       return;
     }
 
-    addEnvVariable({
-      projectId: id || "",
-      environment: selectedEnvironment,
-      key: newVariable.key,
-      value: newVariable.value,
-      description: newVariable.description,
-      type: newVariable.type,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    } as any);
+    try {
+      console.log(`🔄 Adding new variable: ${newVariable.key}`);
+      
+      await addEnvVariable({
+        projectId: id || "",
+        environment: selectedEnvironment,
+        key: newVariable.key,
+        value: newVariable.value,
+        description: newVariable.description,
+        type: newVariable.type,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
 
-    setNewVariable({ key: "", value: "", description: "", type: "string" });
+      setNewVariable({ key: "", value: "", description: "", type: "string" });
 
-    toast({
-      title: "Variable added",
-      description: `${newVariable.key} has been added to ${selectedEnvironment}`,
-    });
+      toast({
+        title: "Variable added",
+        description: `${newVariable.key} has been added to ${selectedEnvironment}`,
+      });
+
+      console.log(`✅ Variable added successfully: ${newVariable.key}`);
+    } catch (error) {
+      console.error("❌ Failed to add variable:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add variable",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditVariable = (variable: EnvVariable) => {
@@ -175,7 +246,7 @@ const ProjectDetail = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateVariable = () => {
+  const handleUpdateVariable = async () => {
     if (!editingVariable) return;
 
     if (!editingVariable.key.trim()) {
@@ -187,32 +258,78 @@ const ProjectDetail = () => {
       return;
     }
 
-    updateEnvVariable(editingVariable.$id, {
-      projectId: id || "",
-      key: editingVariable.key,
-      value: editingVariable.value,
-      description: editingVariable.description,
-      type: editingVariable.type,
-      environment: editingVariable.environment,
-      updatedAt: new Date().toISOString(),
-    });
+    try {
+      console.log(`🔄 Updating variable: ${editingVariable.key}`);
 
-    setIsEditDialogOpen(false);
-    setEditingVariable(null);
+      await updateEnvVariable(editingVariable.$id, {
+        projectId: id || "",
+        key: editingVariable.key,
+        value: editingVariable.value,
+        description: editingVariable.description,
+        type: editingVariable.type,
+        environment: editingVariable.environment,
+        updatedAt: new Date().toISOString(),
+      });
 
-    toast({
-      title: "Variable updated",
-      description: `${editingVariable.key} has been updated successfully`,
-    });
+      setIsEditDialogOpen(false);
+      setEditingVariable(null);
+
+      toast({
+        title: "Variable updated",
+        description: `${editingVariable.key} has been updated successfully`,
+      });
+
+      console.log(`✅ Variable updated successfully: ${editingVariable.key}`);
+    } catch (error) {
+      console.error("❌ Failed to update variable:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update variable",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteVariable = (variable: EnvVariable) => {
-    deleteEnvVariable(variable.$id);
+  const handleDeleteVariable = async (variable: EnvVariable) => {
+    try {
+      console.log(`🔄 Deleting variable: ${variable.key}`);
 
-    toast({
-      title: "Variable deleted",
-      description: `${variable.key} has been deleted from ${variable.environment}`,
-    });
+      await deleteEnvVariable(variable.$id);
+
+      toast({
+        title: "Variable deleted",
+        description: `${variable.key} has been deleted from ${variable.environment}`,
+      });
+
+      console.log(`✅ Variable deleted successfully: ${variable.key}`);
+    } catch (error) {
+      console.error("❌ Failed to delete variable:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete variable",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (!id) return;
+    
+    try {
+      console.log("🔄 Manual refresh requested");
+      await refresh(id);
+      toast({
+        title: "Refreshed",
+        description: "Environment variables have been refreshed",
+      });
+    } catch (error) {
+      console.error("❌ Failed to refresh:", error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh data",
+        variant: "destructive",
+      });
+    }
   };
 
   const resetNewVariable = () => {
@@ -230,16 +347,30 @@ const ProjectDetail = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">{project?.name}</h1>
-            <p className="text-muted-foreground">{project?.description}</p>
+            <h1 className="text-3xl font-bold text-foreground">{project?.name || "Loading..."}</h1>
+            <p className="text-muted-foreground">{project?.description || "Loading project details..."}</p>
           </div>
-          <Badge variant="secondary" className="status-synced">
-            <GitBranch className="w-3 h-3 mr-1" />
-            Synced
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary" className="status-synced">
+              <GitBranch className="w-3 h-3 mr-1" />
+              Synced
+            </Badge>
+            {/* Real-time connection indicator */}
+            <Badge variant={isRealtimeConnected ? "default" : "destructive"} className="flex items-center">
+              {isRealtimeConnected ? (
+                <><Wifi className="w-3 h-3 mr-1" /> Real-time</>
+              ) : (
+                <><WifiOff className="w-3 h-3 mr-1" /> Offline</>
+              )}
+            </Badge>
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">
+          <Button variant="outline" onClick={handleRefresh} disabled={loading}>
+            <History className="w-4 h-4 mr-2" />
+            {loading ? "Loading..." : "Refresh"}
+          </Button>
           <Button variant="outline" onClick={() => setShowHistory(true)}>
             <History className="w-4 h-4 mr-2" />
             History
@@ -283,14 +414,20 @@ const ProjectDetail = () => {
                 />
               </div>
               <Badge variant="secondary" className="text-muted-foreground">
-                {filteredVariables?.length} variables
+                {filteredVariables?.length || 0} variables
               </Badge>
+              {loading && (
+                <Badge variant="outline" className="text-blue-600">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-spin mr-2"></div>
+                  Loading...
+                </Badge>
+              )}
             </div>
 
             {/* Add Variable Dialog */}
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary-hover text-primary-foreground">
+                <Button className="bg-primary hover:bg-primary-hover text-primary-foreground" disabled={loading}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Variable
                 </Button>
@@ -351,7 +488,7 @@ const ProjectDetail = () => {
                       </Button>
                     </DialogClose>
                     <DialogClose asChild>
-                      <Button onClick={handleAddVariable} className="flex-1">
+                      <Button onClick={handleAddVariable} className="flex-1" disabled={loading}>
                         Add Variable
                       </Button>
                     </DialogClose>
@@ -362,102 +499,133 @@ const ProjectDetail = () => {
           </div>
 
           {/* Variables Table */}
-          <Card className="border-border">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border">
-                    <TableHead className="text-foreground">Key</TableHead>
-                    <TableHead className="text-foreground">Value</TableHead>
-                    <TableHead className="text-foreground">Type</TableHead>
-                    <TableHead className="text-foreground">Description</TableHead>
-                    <TableHead className="text-foreground">Last Modified</TableHead>
-                    <TableHead className="text-foreground">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredVariables.map((variable) => (
-                    <TableRow key={variable.id} className="border-border hover:bg-muted/30">
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono font-medium syntax-key">{variable.key}</span>
-                          {variable.isEditing && variable.editedBy && (
-                            <CollaboratorIndicator editedBy={variable.editedBy} />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <VariableValue variable={variable} />
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="capitalize">
-                          {variable.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground max-w-xs truncate">
-                        {variable.description || "—"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div className="text-foreground">{variable.lastModified}</div>
-                          <div className="text-muted-foreground">by {variable?.lastUpdatedBy}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditVariable(variable)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopyVariable(variable)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Variable</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete the variable "{variable.key}"?
-                                  This action cannot be undone and will remove it from the {variable.environment} environment.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteVariable(variable)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
+          {filteredVariables.length === 0 && !loading ? (
+            <Card className="border-border">
+              <CardContent className="p-12 text-center">
+                <div className="text-gray-400 text-6xl mb-4">📝</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Environment Variables</h3>
+                <p className="text-gray-600 mb-4">
+                  {searchQuery 
+                    ? `No variables found matching "${searchQuery}" in ${selectedEnvironment} environment.`
+                    : `No variables configured for ${selectedEnvironment} environment yet.`
+                  }
+                </p>
+                {!searchQuery && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Your First Variable
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-border">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border">
+                      <TableHead className="text-foreground">Key</TableHead>
+                      <TableHead className="text-foreground">Value</TableHead>
+                      <TableHead className="text-foreground">Type</TableHead>
+                      <TableHead className="text-foreground">Description</TableHead>
+                      <TableHead className="text-foreground">Last Modified</TableHead>
+                      <TableHead className="text-foreground">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredVariables.map((variable) => (
+                      <TableRow key={variable.$id} className="border-border hover:bg-muted/30">
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono font-medium syntax-key">{variable.key}</span>
+                            {variable.isEditing && variable.editedBy && (
+                              <CollaboratorIndicator editedBy={variable.editedBy} />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <VariableValue variable={variable} />
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="capitalize">
+                            {variable.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground max-w-xs truncate">
+                          {variable.description || "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div className="text-foreground">
+                              {variable.updatedAt ? new Date(variable.updatedAt).toLocaleString() : variable.lastModified}
+                            </div>
+                            <div className="text-muted-foreground">
+                              by {variable.lastUpdatedBy || variable.modifiedBy}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditVariable(variable)}
+                              className="h-8 w-8 p-0"
+                              disabled={loading}
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopyVariable(variable)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                  disabled={loading}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Variable</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete the variable "{variable.key}"?
+                                    This action cannot be undone and will remove it from the {variable.environment} environment.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteVariable(variable)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -520,7 +688,7 @@ const ProjectDetail = () => {
                 <Button variant="outline" onClick={resetEditVariable} className="flex-1">
                   Cancel
                 </Button>
-                <Button onClick={handleUpdateVariable} className="flex-1">
+                <Button onClick={handleUpdateVariable} className="flex-1" disabled={loading}>
                   Update Variable
                 </Button>
               </div>

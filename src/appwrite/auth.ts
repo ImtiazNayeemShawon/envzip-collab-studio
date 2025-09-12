@@ -23,7 +23,7 @@ export class AuthService {
             return await this.account.create(ID.unique(), email, password, name);
         } catch (error) {
             console.error('Error creating account:', error);
-            throw error;
+            
         }
     }
 
@@ -33,7 +33,7 @@ export class AuthService {
             return await this.account.createEmailPasswordSession(email, password);
         } catch (error) {
             console.error('Error logging in:', error);
-            throw error;
+           
         }
     }
 
@@ -43,7 +43,7 @@ export class AuthService {
             return await this.account.get();
         } catch (error) {
             console.error('Error getting current user:', error);
-            throw error;
+           
         }
     }
 
@@ -53,7 +53,6 @@ export class AuthService {
             return await this.account.deleteSessions();
         } catch (error) {
             console.error('Error logging out:', error);
-            throw error;
         }
     }
 
@@ -73,7 +72,7 @@ export class AuthService {
             return await this.account.deleteSessions();
         } catch (error) {
             console.error('Error logging out from all devices:', error);
-            throw error;
+          
         }
     }
 
@@ -83,7 +82,7 @@ export class AuthService {
             return await this.account.updateName(name);
         } catch (error) {
             console.error('Error updating name:', error);
-            throw error;
+           
         }
     }
 
@@ -93,7 +92,7 @@ export class AuthService {
             return await this.account.updatePassword(newPassword, oldPassword);
         } catch (error) {
             console.error('Error updating password:', error);
-            throw error;
+           
         }
     }
 
@@ -106,7 +105,6 @@ export class AuthService {
             );
         } catch (error) {
             console.error('Error sending password recovery:', error);
-            throw error;
         }
     }
 
@@ -116,7 +114,7 @@ export class AuthService {
             return await this.account.updateRecovery(userId, secret, newPassword);
         } catch (error) {
             console.error('Error completing password recovery:', error);
-            throw error;
+           
         }
     }
 
@@ -126,7 +124,7 @@ export class AuthService {
             return await this.account.createVerification(`${window.location.origin}/verify-email`);
         } catch (error) {
             console.error('Error sending email verification:', error);
-            throw error;
+         
         }
     }
 
@@ -136,7 +134,7 @@ export class AuthService {
             return await this.account.updateVerification(userId, secret);
         } catch (error) {
             console.error('Error completing email verification:', error);
-            throw error;
+            
         }
     }
 }

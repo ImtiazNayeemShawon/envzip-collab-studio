@@ -159,7 +159,7 @@ const Dashboard = () => {
                       Edit Project
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => {
-                      setSelectedProjectId(project.id);
+                      setSelectedProjectId(project.$id);
                       setIsTeamSelectorOpen(true);
                     }}>
                       <UserCheck className="w-4 h-4 mr-2" />
@@ -170,7 +170,7 @@ const Dashboard = () => {
                         Manage Team
                       </Link>
                     </DropdownMenuItem>
-                    
+
                     <DropdownMenuItem>Export</DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive"
@@ -204,7 +204,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <div className="flex items-center space-x-1">
                   <Users className="w-4 h-4" />
-                  <span>{project?.collaborators.length} collaborators</span>
+                  <span>{project?.collaborators?.length || 0} collaborators</span>
                 </div>
                 <div className="text-xs">
                   {project?.envCount} variables

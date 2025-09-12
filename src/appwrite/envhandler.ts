@@ -1,6 +1,6 @@
-// envVariableService.js
+// envVariableService.js - Updated with better real-time handling
 import { ID, Query } from "appwrite";
-import database from "./appwritedb";
+import database, { client } from "./appwritedb"; // ensure client is imported
 import authService from "./auth"; // your auth helper
 import {
     createInitialVersion,
@@ -21,11 +21,20 @@ function safeParse(value, fallback) {
     }
 }
 
-const currentUser = await authService.getCurrentUser(); // should return userId
+// Get current user - moved inside functions to avoid top-level await
+async function getCurrentUser() {
+    try {
+        return await authService.getCurrentUser();
+    } catch (error) {
+        console.error("❌ Error getting current user:", error);
+        return null;
+    }
+}
 
 // ✅ Create an Environment Variable
 export async function createEnvVariable(data) {
     try {
+        const currentUser = await getCurrentUser();
         if (!currentUser) throw new Error("User not logged in");
 
         const envVariable = await database.createDocument(
@@ -39,17 +48,18 @@ export async function createEnvVariable(data) {
                 updatedAt: new Date().toISOString(),
             }
         );
+        
         // Create initial version
         try {
             await createInitialVersion(envVariable, "✅ Initial version");
             console.log("✅ Initial version created for environment variable");
         } catch (versionError) {
             console.error("⚠️ Environment variable created but version failed:", versionError);
-            // Don't throw here, the env variable was created successfully
         }
 
         return {
             ...envVariable,
+            tags: safeParse(envVariable.tags, []),
         };
     } catch (error) {
         console.error("❌ Error creating env variable:", error);
@@ -60,6 +70,7 @@ export async function createEnvVariable(data) {
 // ✅ Read environment variables for a given project
 export async function getEnvVariablesByProject(projectId) {
     try {
+        const currentUser = await getCurrentUser();
         if (!currentUser) throw new Error("User not logged in");
 
         const queries = [Query.equal("projectId", projectId)];
@@ -95,6 +106,8 @@ export async function getEnvVariableById(variableId) {
 // ✅ Update an Environment Variable
 export async function updateEnvVariable(variableId, updates) {
     try {
+        const currentUser = await getCurrentUser();
+        if (!currentUser) throw new Error("User not logged in");
 
         // Get the current version before updating
         const oldEnvVariable = await database.getDocument(databaseId, tableId, variableId);
@@ -109,18 +122,18 @@ export async function updateEnvVariable(variableId, updates) {
                 updatedAt: new Date().toISOString(),
             }
         );
+        
         // Create version for the update
-
-
         try {
             await createVersionOnUpdate(oldEnvVariable, envVariable);
             console.log("✅ Update version created for environment variable");
         } catch (versionError) {
             console.error("⚠️ Environment variable updated but version failed:", versionError);
-            // Don't throw here, the update was successful
         }
+        
         return {
             ...envVariable,
+            tags: safeParse(envVariable.tags, []),
         };
     } catch (error) {
         console.error("❌ Error updating env variable:", error);
@@ -140,8 +153,8 @@ export async function deleteEnvVariable(variableId) {
             console.log("✅ Delete version created for environment variable");
         } catch (versionError) {
             console.error("⚠️ Version creation failed before deletion:", versionError);
-            // Continue with deletion anyway
         }
+        
         await database.deleteDocument(databaseId, tableId, variableId);
         return true;
     } catch (error) {
@@ -150,43 +163,62 @@ export async function deleteEnvVariable(variableId) {
     }
 }
 
-// ✅ Rollback an Environment Variable to a previous version
-export async function rollbackEnvVariable(variableId, versionData) {
+// ✅ Enhanced Realtime subscribe for env variables by project
+export function subscribeEnvVariables(projectId, onEvent) {
+    if (!databaseId || !projectId || !client) {
+        console.error("❌ Missing required parameters for real-time subscription");
+        return () => {};
+    }
+
+    const collectionId = "envVariables";
+    const topic = `databases.${databaseId}.collections.${collectionId}.documents`;
+
+    console.log(`🔄 Starting real-time subscription for project: ${projectId}`);
+    console.log(`📡 Topic: ${topic}`);
+
     try {
-        // Get current environment variable
-        const currentEnvVariable = await database.getDocument(databaseId, tableId, variableId);
+        const unsubscribe = client.subscribe(topic, (response) => {
+            try {
+                console.log("🔄 Real-time event received:", response);
+                
+                const payload = response?.payload;
+                const events = response?.events || [];
+                
+                if (!payload) {
+                    console.warn("⚠️ No payload in real-time event");
+                    return;
+                }
 
-        // Prepare rollback data
-        // versionData should contain the full state of the env variable to rollback to
-        const rollbackData = {
-            key: versionData.key,
-            value: versionData.value,
-            description: versionData.description,
-            environment: versionData.environment,
-            tags: versionData.tags ? JSON.stringify(versionData.tags) : "[]",
-            lastUpdatedBy: currentUser?.name,
-            updatedAt: new Date().toISOString(),
-        };
+                // Only forward events for this specific project
+                if (payload.projectId !== projectId) {
+                    console.log(`🔄 Event for different project (${payload.projectId}), ignoring`);
+                    return;
+                }
 
-        // Update the environment variable with rollback data
-        const updatedEnvVariable = await database.updateDocument(
-            databaseId,
-            tableId,
-            variableId,
-            rollbackData
-        );
+                console.log(`✅ Processing event for project ${projectId}:`, events);
+                
+                // Normalize the payload
+                const normalizedPayload = {
+                    ...payload,
+                    tags: safeParse(payload.tags, []),
+                };
 
-        // Create a version entry for the rollback
-        try {
-            await createVersionOnUpdate(currentEnvVariable, updatedEnvVariable);
-            console.log("✅ Rollback version created for environment variable");
-        } catch (versionError) {
-            console.error("⚠️ Rollback succeeded but version creation failed:", versionError);
-        }
+                // Call the event handler with normalized data
+                onEvent?.({
+                    ...response,
+                    payload: normalizedPayload
+                });
+                
+            } catch (error) {
+                console.error("❌ Real-time handler error:", error);
+            }
+        });
 
-        return updatedEnvVariable;
+        console.log("✅ Real-time subscription established");
+        return unsubscribe;
+        
     } catch (error) {
-        console.error("❌ Error rolling back env variable:", error);
-        throw error;
+        console.error("❌ Failed to establish real-time subscription:", error);
+        return () => {};
     }
 }

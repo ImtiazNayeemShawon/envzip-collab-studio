@@ -46,20 +46,20 @@ export const ProjectTeamSelector = ({ isOpen, onClose, projectId }: ProjectTeamS
   const { toast } = useToast();
 
   const project = getProjectById(projectId);
-  const assignedMemberIds = project?.assignedMembers || [];
+  const assignedMemberIds = project?.collaborators || [];
 
-  const handleToggleMember = (memberId: string) => {
-    const isAssigned = assignedMemberIds.includes(memberId);
-    const member = globalTeamMembers.find(m => m.id === memberId);
+  const handleToggleMember = (email: string) => {
+    const isAssigned = assignedMemberIds?.includes(email);
+    const member = globalTeamMembers?.find(m => m.email === email);
     
     if (isAssigned) {
-      removeMemberFromProject(projectId, memberId);
+      removeMemberFromProject(projectId, email);
       toast({
         title: "Member removed",
         description: `${member?.name} has been removed from the project.`,
       });
     } else {
-      assignMemberToProject(projectId, memberId);
+      assignMemberToProject(projectId, email);
       toast({
         title: "Member assigned",
         description: `${member?.name} has been assigned to the project.`,
@@ -94,15 +94,14 @@ export const ProjectTeamSelector = ({ isOpen, onClose, projectId }: ProjectTeamS
 
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {globalTeamMembers?.map((member) => {
-            const isAssigned = assignedMemberIds.includes(member.id);
-            
+            const isAssigned = project?.collaborators?.includes(member.email);
             return (
               <Card 
                 key={member.id} 
                 className={`cursor-pointer transition-all ${
                   isAssigned ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
                 }`}
-                onClick={() => handleToggleMember(member.id)}
+                onClick={() => handleToggleMember(member.email)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -132,7 +131,7 @@ export const ProjectTeamSelector = ({ isOpen, onClose, projectId }: ProjectTeamS
                       </div>
                     </div>
 
-                    <div className={`
+                    {/* <div className={`
                       w-6 h-6 rounded-full border-2 flex items-center justify-center
                       ${isAssigned 
                         ? "bg-primary border-primary text-primary-foreground" 
@@ -140,7 +139,7 @@ export const ProjectTeamSelector = ({ isOpen, onClose, projectId }: ProjectTeamS
                       }
                     `}>
                       {isAssigned && <Check className="w-4 h-4" />}
-                    </div>
+                    </div> */}
                   </div>
                 </CardContent>
               </Card>
