@@ -56,9 +56,9 @@ export const TeamMemberForm = ({ isOpen, onClose, projectId, member, isGlobalTea
           name: data.name,
           email: data.email,
           role: data.role,
-          joinedAt: new Date().toLocaleDateString(),
           status: "offline"
         });
+        console.log("data", data);
         toast({
           title: "Team member added",
           description: "New team member has been added to the global team.",

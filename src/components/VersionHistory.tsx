@@ -10,9 +10,10 @@ import {
   getVersionHistory,
   createVersionOnUpdate,
   createVersionOnDelete,
-  createInitialVersion
+  createInitialVersion,
+  getVersionById
 } from "../appwrite/versionHandler";
-import { rollbackEnvVariable } from "@/appwrite/envhandler";
+import { rollbackEnvVariable, updateEnvVariable } from "@/appwrite/envhandler";
 
 
 interface VersionChange {
@@ -132,30 +133,57 @@ const VersionHistory = ({ open, onOpenChange, $id }: any) => {
     }
   };
 
-  // const handleRollback = async (versionId: string) => {
-  //   try {
-  //     const version = versions.find(v => v.id === versionId);
-  //     if (!version) return;
+  const handleRollback = async (versionId: string) => {
 
-  //     // Iterate through all changes in the version
-  //     for (const change of version.changes) {
-  //       await restoreEnvVariable(change); // Restore function per variable
-  //     }
+    try {
 
-  //     toast({
-  //       title: "Rollback successful",
-  //       description: `Rolled back to version ${versionId}`,
-  //     });
+      toast({
+        title: "Rollback successful",
+        description: `Rolled back to version ${versionId}`,
+      });
 
-  //     fetchVersions(); // Refresh version list after rollback
-  //   } catch (err) {
-  //     console.error("❌ Full rollback failed:", err);
-  //     toast({
-  //       title: "Rollback failed",
-  //       description: "Check console for details",
-  //     });
-  //   }
-  // };
+      fetchVersions(); // Refresh version list after rollback
+    } catch (err) {
+      console.error("❌ Full rollback failed:", err);
+      toast({
+        title: "Rollback failed",
+        description: "Check console for details",
+      });
+    }
+  };
+
+  const handleRollbackChange = async (versionId: string, changeKey: string) => {
+    try {
+      const versionData = await getVersionById(versionId);
+      const targetEnvVariableId = (versionData as any).envVariableId;
+      if (!targetEnvVariableId) throw new Error("envVariableId missing in version data");
+
+      const change = (versionData as any).changes?.find((c: any) => c.field === changeKey);
+      if (!change) throw new Error("Change not found in version");
+
+      const updates: Record<string, any> = {};
+      if (changeKey === 'tags') {
+        updates[changeKey] = Array.isArray(change.oldValue) ? JSON.stringify(change.oldValue) : change.oldValue;
+      } else {
+        updates[changeKey] = change.oldValue ?? null;
+      }
+
+      await updateEnvVariable(targetEnvVariableId, updates);
+
+      toast({
+        title: "Field rollback successful",
+        description: `${changeKey} rolled back to version ${versionId}`,
+      });
+
+      fetchVersions();
+    } catch (err) {
+      console.error("❌ Field rollback failed:", err);
+      toast({
+        title: "Rollback failed",
+        description: "Check console for details",
+      });
+    }
+  };
 
   // const handleRollbackChange = async (versionId: string, changeKey: string) => {
   //   try {

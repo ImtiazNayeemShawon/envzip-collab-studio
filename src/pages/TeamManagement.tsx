@@ -135,7 +135,7 @@
 //                   </Badge>
 //                 </div>
 //                 <div className="text-xs text-muted-foreground">
-//                   Joined {member.joinedAt}
+//                   Joined {member.createdAt}
 //                 </div>
 //               </div>
 //             </CardContent>

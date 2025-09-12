@@ -269,7 +269,17 @@ export async function getEnvironmentVersionHistory(projectId, environment, limit
 // ✅ Get a specific version by ID
 export async function getVersionById(versionId) {
   try {
-    const version = await database.getDocument(databaseId, versionsTableId, versionId);
+    console.log("checking for version", versionId);
+    // Query for the document where versionId field matches
+    const queries = [Query.equal("versionId", versionId), Query.limit(1)];
+    const response = await database.listDocuments(databaseId, versionsTableId, queries);
+    console.log("response", response);
+
+    if (!response.documents.length) {
+      throw new Error(`Version with versionId ${versionId} not found`);
+    }
+
+    const version = response.documents[0];
 
     return {
       ...version,
