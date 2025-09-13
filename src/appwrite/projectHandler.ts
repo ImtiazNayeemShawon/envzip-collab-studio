@@ -108,7 +108,6 @@ export async function getProjects() {
       // Step 3: Attach counts & latest 3 envs
       projects.forEach((project) => {
         const envs = envMap[project.$id] || [];
-        envs.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
         project.envCount = envs.length;
         project.latestEnvs = envs.slice(0, 3);
       });
