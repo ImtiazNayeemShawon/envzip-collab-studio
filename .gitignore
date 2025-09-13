@@ -25,6 +25,5 @@ bun.lockb
 *.njsproj
 *.sln
 *.sw?
-./envzip-cli
-/envzip-cli
+
 setup.sh
