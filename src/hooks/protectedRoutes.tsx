@@ -9,17 +9,19 @@ interface ProtectedRouteProps {
     redirectTo?: string;
 }
 
-export const ProtectedRoute = ({ 
-    children, 
-    requireAuth = true, 
-    redirectTo = '/login' 
+export const ProtectedRoute = ({
+    children,
+    requireAuth = true,
+    redirectTo = '/login'
 }: ProtectedRouteProps) => {
     const { isAuthenticated, loading } = useAuth();
     const location = useLocation();
 
     // Show loading spinner while checking authentication
     if (loading) {
-        return <LoadingSpinner />;
+        return <div className='flex justify-center items-center h-screen'>
+            <LoadingSpinner />
+        </div>
     }
 
     // If route requires auth and user is not authenticated

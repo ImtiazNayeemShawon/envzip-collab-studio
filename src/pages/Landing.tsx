@@ -60,7 +60,7 @@ const Landing = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/signup">
                 <Button size="lg" className="bg-primary hover:bg-primary/90 h-12 px-8">
-                  Start Free Trial
+                  Start for free
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
@@ -105,7 +105,7 @@ const Landing = () => {
             <div className="absolute -bottom-4 -left-4 bg-accent/10 backdrop-blur border border-accent/20 rounded-lg p-3">
               <div className="flex items-center gap-2 text-sm text-accent-foreground">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="font-mono">Synced 2s ago</span>
+                <span className="font-mono text-green-500">Synced 2s ago</span>
               </div>
             </div>
           </div>
@@ -266,7 +266,7 @@ const Landing = () => {
                   <span>API Access</span>
                 </div>
                 <Button className="w-full mt-6 bg-primary hover:bg-primary/90">
-                  Start Free Trial
+                  Start for free
                 </Button>
               </CardContent>
             </Card>
@@ -322,7 +322,7 @@ const Landing = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup">
               <Button size="lg" className="bg-primary hover:bg-primary/90 h-12 px-8">
-                Start Free Trial
+                Start for free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>

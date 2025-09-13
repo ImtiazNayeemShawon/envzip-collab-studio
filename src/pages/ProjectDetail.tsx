@@ -211,7 +211,7 @@ const ProjectDetail = () => {
 
     try {
       console.log(`🔄 Adding new variable: ${newVariable.key}`);
-      
+
       await addEnvVariable({
         projectId: id || "",
         environment: selectedEnvironment,
@@ -314,7 +314,7 @@ const ProjectDetail = () => {
 
   const handleRefresh = async () => {
     if (!id) return;
-    
+
     try {
       console.log("🔄 Manual refresh requested");
       await refresh(id);
@@ -340,6 +340,80 @@ const ProjectDetail = () => {
     setEditingVariable(null);
     setIsEditDialogOpen(false);
   };
+
+  const handleExportEnv = () => {
+    if (!filteredVariables.length) {
+      toast({
+        title: "No variables",
+        description: `No variables found in ${selectedEnvironment}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Generate .env file content
+    const envContent = filteredVariables
+      .map((v) => `${v.key}=${v.value}`)
+      .join("\n");
+
+    // Create and download file
+    const blob = new Blob([envContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${project?.name || "project"}_${selectedEnvironment}.env`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Exported",
+      description: `Environment variables exported for ${selectedEnvironment}`,
+    });
+  };
+  const [importText, setImportText] = useState("");
+
+  const handleImportEnv = async (envText: string) => {
+    if (!id) return;
+
+    try {
+      const lines = envText.split("\n").filter(Boolean);
+
+      for (const line of lines) {
+        const [rawKey, ...rawValue] = line.split("=");
+        const key = rawKey.trim();
+        const value = rawValue.join("=").trim().replace(/^"|"$/g, ""); // remove quotes if exist
+
+        if (!key) continue;
+
+        await addEnvVariable({
+          projectId: id,
+          environment: selectedEnvironment,
+          key,
+          value,
+          description: "",
+          type: "secret", // you can add some auto detection
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      toast({
+        title: "Import complete",
+        description: `${lines.length} variables imported into ${selectedEnvironment}`,
+      });
+    } catch (error) {
+      console.error("❌ Import failed:", error);
+      toast({
+        title: "Error",
+        description: "Failed to import environment variables",
+        variant: "destructive",
+      });
+    }
+  };
+
+
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -375,14 +449,39 @@ const ProjectDetail = () => {
             <History className="w-4 h-4 mr-2" />
             History
           </Button>
-          <Button variant="outline">
+          <Button onClick={handleExportEnv} variant="outline">
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button variant="outline">
-            <Upload className="w-4 h-4 mr-2" />
-            Import
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Upload className="w-4 h-4 mr-2" />
+                Import
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader>
+                <DialogTitle>Import Variables</DialogTitle>
+              </DialogHeader>
+              <Textarea
+                placeholder={`VITE_API_KEY=xxxx\nVITE_PROJECT_ID=yyyy`}
+                rows={10}
+                onChange={(e) => setImportText(e.target.value)}
+              />
+              <div className="flex space-x-2 mt-4">
+                <DialogClose asChild>
+                  <Button variant="outline" className="flex-1">Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button onClick={() => handleImportEnv(importText)} className="flex-1">
+                    Import
+                  </Button>
+                </DialogClose>
+              </div>
+            </DialogContent>
+          </Dialog>
+
         </div>
       </div>
 
@@ -505,21 +604,12 @@ const ProjectDetail = () => {
                 <div className="text-gray-400 text-6xl mb-4">📝</div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Environment Variables</h3>
                 <p className="text-gray-600 mb-4">
-                  {searchQuery 
+                  {searchQuery
                     ? `No variables found matching "${searchQuery}" in ${selectedEnvironment} environment.`
                     : `No variables configured for ${selectedEnvironment} environment yet.`
                   }
                 </p>
-                {!searchQuery && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Your First Variable
-                      </Button>
-                    </DialogTrigger>
-                  </Dialog>
-                )}
+
               </CardContent>
             </Card>
           ) : (

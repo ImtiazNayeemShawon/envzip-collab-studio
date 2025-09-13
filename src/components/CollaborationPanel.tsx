@@ -65,10 +65,10 @@ const CollaborationPanel = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Users className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Team Members:</h3>
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+            <h3 className="font-semibold text-foreground">Team Members</h3>
+            {/* <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
               {globalTeamMembers?.filter((c: any) => c.status === "online").length} online
-            </span>
+            </span> */}
           </div>
           <div className="flex items-center space-x-1">
             <Button
@@ -98,7 +98,7 @@ const CollaborationPanel = () => {
             key={member.id}
             className={`
               flex items-center space-x-3 p-3 rounded-lg transition-smooth
-              ${member.status === "online" ? "bg-muted/30" : "opacity-60"}
+               bg-muted/30
               hover:bg-muted/50
             `}
           >
@@ -140,12 +140,7 @@ const CollaborationPanel = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-popover border-border">
-                  <DropdownMenuItem onClick={() => {
-                    setEditingMember(member);
-                    setIsTeamFormOpen(true);
-                  }}>
-                    Edit Member
-                  </DropdownMenuItem>
+                  
                   <DropdownMenuItem 
                     className="text-destructive"
                     onClick={() => removeGlobalTeamMember(member.id)}
@@ -160,7 +155,7 @@ const CollaborationPanel = () => {
       </div>
 
       {/* Activity Feed */}
-      <div className="p-4 border-t border-border">
+      {/* <div className="p-4 border-t border-border">
         <h4 className="text-sm font-medium text-foreground mb-3">Recent Activity</h4>
         <div className="space-y-2 text-xs text-muted-foreground">
           <div className="flex items-center space-x-2">
@@ -169,7 +164,7 @@ const CollaborationPanel = () => {
             <span className="text-xs">just now</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <TeamMemberForm
         isOpen={isTeamFormOpen}

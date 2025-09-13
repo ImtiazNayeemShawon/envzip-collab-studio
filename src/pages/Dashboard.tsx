@@ -188,13 +188,16 @@ const Dashboard = () => {
               <div className="space-y-2 mb-4">
                 {project?.latestEnvs?.map((env) => (
                   <div key={env.name} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <div className="flex items-center space-x-2">
-                      <StatusIcon status={env.environment} />
-                      <span className="text-sm font-medium capitalize text-foreground">{env.key}</span>
-                      <StatusBadge status={env.environment} />
+                    <div className="">
+                      <span className="text-sm font-medium capitalize text-foreground">
+                        {env.key && env.key.length > 20 ? env.key.slice(0, 20) + "..." : env.key}
+                      </span>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {env.lastUpdated}
+                    <div className="text-xs text-muted-foreground flex items-center space-x-2">
+                      <StatusIcon status={env.environment} />
+                      <span>
+                        {env.updatedAt ? new Date(env.updatedAt).toLocaleString() : env.lastModified}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -216,14 +219,19 @@ const Dashboard = () => {
       </div>
 
       {/* Empty State */}
-      {isLoading ? <div className="mx-auto  h-96 flex flex-col items-center"><LoadingScreen /></div> : <div className="text-center py-12">
-        <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-foreground mb-2">No projects found</h3>
-        <p className="text-muted-foreground">
-          Try adjusting your search criteria or create a new project.
-        </p>
-      </div>}
-
+      {isLoading ? (
+        <div className="mx-auto h-96 flex flex-col items-center">
+          <LoadingScreen />
+        </div>
+      ) : projects.length <= 0 ? (
+        <div className="text-center py-12">
+          <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No projects found</h3>
+          <p className="text-muted-foreground">
+            Try adjusting your search criteria or create a new project.
+          </p>
+        </div>
+      ) : null}
       <ProjectForm
         isOpen={isProjectFormOpen}
         onClose={() => {

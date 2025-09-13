@@ -19,7 +19,7 @@ const Layout = ({ children }: LayoutProps) => {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo and Brand */}
-          <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-smooth">
+          <Link to="/dashboard" className="flex items-center space-x-3 hover:opacity-80 transition-smooth">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <GitBranch className="w-5 h-5 text-primary-foreground" />
             </div>
